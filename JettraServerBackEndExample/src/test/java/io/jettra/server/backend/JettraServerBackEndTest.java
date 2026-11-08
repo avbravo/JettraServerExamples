@@ -207,16 +207,43 @@ public class JettraServerBackEndTest {
             app.startApplication(new String[0]);
             HttpClient client = HttpClient.newHttpClient();
 
-            // 1. Listar usuarios (debe existir al menos admin)
-            HttpRequest listReq = HttpRequest.newBuilder()
+            // 1. Petición no autenticada debe ser rechazada con 401
+            HttpRequest unauthReq = HttpRequest.newBuilder()
                     .uri(URI.create("http://127.0.0.1:" + port + "/api/security/users"))
                     .GET()
                     .build();
+            HttpResponse<String> unauthRes = client.send(unauthReq, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(401, unauthRes.statusCode(), "Petición sin token debe responder 401");
+
+            // 2. Autenticarse como ADMIN
+            String loginAdminJson = """
+                {
+                    "username": "admin",
+                    "password": "admin"
+                }
+                """;
+            HttpRequest loginReq = HttpRequest.newBuilder()
+                    .uri(URI.create("http://127.0.0.1:" + port + "/api/auth/login"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(loginAdminJson))
+                    .build();
+            HttpResponse<String> loginRes = client.send(loginReq, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, loginRes.statusCode(), "Login de admin debe responder 200");
+            Map<?, ?> authData = JSON.fromJson(loginRes.body(), Map.class);
+            String adminToken = (String) authData.get("rawToken");
+            JettraAssert.assertNotNull(adminToken, "Debe retornar token JWT");
+
+            // 3. Listar usuarios con token ADMIN (debe existir admin)
+            HttpRequest listReq = HttpRequest.newBuilder()
+                    .uri(URI.create("http://127.0.0.1:" + port + "/api/security/users"))
+                    .header("Authorization", "Bearer " + adminToken)
+                    .GET()
+                    .build();
             HttpResponse<String> listRes = client.send(listReq, HttpResponse.BodyHandlers.ofString());
-            JettraAssert.assertEquals(200, listRes.statusCode(), "Debe responder 200 OK");
+            JettraAssert.assertEquals(200, listRes.statusCode(), "Debe responder 200 OK con token ADMIN");
             JettraAssert.assertTrue(listRes.body().contains("admin"), "Debe contener usuario admin inicial");
 
-            // 2. Crear nuevo usuario en JettraSecurityDB
+            // 4. Crear nuevo usuario en JettraSecurityDB con rol OPERATOR
             String newUserJson = """
                 {
                     "username": "operario1",
@@ -227,6 +254,7 @@ public class JettraServerBackEndTest {
                 """;
             HttpRequest createReq = HttpRequest.newBuilder()
                     .uri(URI.create("http://127.0.0.1:" + port + "/api/security/users"))
+                    .header("Authorization", "Bearer " + adminToken)
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(newUserJson))
                     .build();
@@ -234,7 +262,32 @@ public class JettraServerBackEndTest {
             JettraAssert.assertEquals(201, createRes.statusCode(), "Creación debe retornar 201 Created");
             JettraAssert.assertTrue(createRes.body().contains("operario1"), "Debe confirmar creación de operario1");
 
-            // 3. Asignar rol adicional
+            // 5. Iniciar sesión con el nuevo usuario sin rol ADMIN y verificar acceso denegado (403)
+            String loginUserJson = """
+                {
+                    "username": "operario1",
+                    "password": "claveSegura123"
+                }
+                """;
+            HttpRequest userLoginReq = HttpRequest.newBuilder()
+                    .uri(URI.create("http://127.0.0.1:" + port + "/api/auth/login"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(loginUserJson))
+                    .build();
+            HttpResponse<String> userLoginRes = client.send(userLoginReq, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, userLoginRes.statusCode(), "Login de operario1 debe ser 200");
+            Map<?, ?> userAuthData = JSON.fromJson(userLoginRes.body(), Map.class);
+            String userToken = (String) userAuthData.get("rawToken");
+
+            HttpRequest forbiddenReq = HttpRequest.newBuilder()
+                    .uri(URI.create("http://127.0.0.1:" + port + "/api/security/users"))
+                    .header("Authorization", "Bearer " + userToken)
+                    .GET()
+                    .build();
+            HttpResponse<String> forbiddenRes = client.send(forbiddenReq, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(403, forbiddenRes.statusCode(), "Usuario sin rol ADMIN debe recibir 403 Forbidden");
+
+            // 6. Asignar rol adicional con token ADMIN
             String addRoleJson = """
                 {
                     "username": "operario1",
@@ -244,13 +297,14 @@ public class JettraServerBackEndTest {
                 """;
             HttpRequest addRoleReq = HttpRequest.newBuilder()
                     .uri(URI.create("http://127.0.0.1:" + port + "/api/security/users/role"))
+                    .header("Authorization", "Bearer " + adminToken)
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(addRoleJson))
                     .build();
             HttpResponse<String> addRoleRes = client.send(addRoleReq, HttpResponse.BodyHandlers.ofString());
             JettraAssert.assertEquals(200, addRoleRes.statusCode(), "Asignación de rol debe responder 200");
 
-            // 4. Modificar estado
+            // 7. Modificar estado
             String statusJson = """
                 {
                     "username": "operario1",
@@ -259,25 +313,28 @@ public class JettraServerBackEndTest {
                 """;
             HttpRequest statusReq = HttpRequest.newBuilder()
                     .uri(URI.create("http://127.0.0.1:" + port + "/api/security/users/status"))
+                    .header("Authorization", "Bearer " + adminToken)
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(statusJson))
                     .build();
             HttpResponse<String> statusRes = client.send(statusReq, HttpResponse.BodyHandlers.ofString());
             JettraAssert.assertEquals(200, statusRes.statusCode(), "Cambio de estado debe responder 200");
 
-            // 5. Crear y listar rol
+            // 8. Crear rol
             String roleJson = "{\"name\": \"AUDITOR\"}";
             HttpRequest createRoleReq = HttpRequest.newBuilder()
                     .uri(URI.create("http://127.0.0.1:" + port + "/api/security/roles"))
+                    .header("Authorization", "Bearer " + adminToken)
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(roleJson))
                     .build();
             HttpResponse<String> createRoleRes = client.send(createRoleReq, HttpResponse.BodyHandlers.ofString());
             JettraAssert.assertEquals(201, createRoleRes.statusCode(), "Creación de rol debe responder 201");
 
-            // 6. Eliminar usuario
+            // 9. Eliminar usuario
             HttpRequest delReq = HttpRequest.newBuilder()
                     .uri(URI.create("http://127.0.0.1:" + port + "/api/security/users?username=operario1"))
+                    .header("Authorization", "Bearer " + adminToken)
                     .DELETE()
                     .build();
             HttpResponse<String> delRes = client.send(delReq, HttpResponse.BodyHandlers.ofString());
