@@ -251,6 +251,8 @@ public class JettraServerExampleTest {
             JettraAssert.assertEquals(200, resSwagger.statusCode(), "Swagger-UI debe responder HTTP 200");
             JettraAssert.assertTrue(resSwagger.body().contains("OpenAPI 3.0.0"), "Debe contener el badge de OpenAPI 3.0.0");
             JettraAssert.assertTrue(resSwagger.body().contains("Panel de Acreditación de Usuario"), "Debe incluir el panel de acreditación");
+            JettraAssert.assertTrue(resSwagger.body().contains("Administración de Usuarios y Roles (JettraSecurityDB)"), "Debe incluir el panel de gestión de usuarios y roles");
+            JettraAssert.assertTrue(resSwagger.body().contains("jettraLoadUsers"), "Debe contener la función JS de carga de usuarios");
             JettraAssert.assertTrue(resSwagger.body().contains("jettraLogin"), "Debe contener la función JS de autenticación");
 
             // 2. OpenAPI Spec JSON
@@ -263,6 +265,7 @@ public class JettraServerExampleTest {
             JettraAssert.assertTrue(resOpenApi.body().contains("\"openapi\""), "Debe tener clave openapi");
             JettraAssert.assertTrue(resOpenApi.body().contains("3.0.0"), "Debe ser versión OpenAPI 3.0.0");
             JettraAssert.assertTrue(resOpenApi.body().contains("/api/productos"), "Debe listar el endpoint de productos");
+            JettraAssert.assertTrue(resOpenApi.body().contains("/api/security/users"), "Debe documentar endpoints de administración de seguridad");
             JettraAssert.assertTrue(resOpenApi.body().contains("/api/info"), "Debe listar el endpoint de info");
         } finally {
             server.stop();

@@ -183,9 +183,105 @@ public class JettraServerBackEndTest {
             JettraAssert.assertEquals(200, res.statusCode(), "Swagger-UI debe responder 200 OK");
             JettraAssert.assertTrue(res.headers().firstValue("Content-Type").orElse("").contains("text/html"), "Debe retornar HTML");
             JettraAssert.assertTrue(res.body().contains("Panel de Acreditación de Usuario"), "Debe incluir el panel de acreditación");
+            JettraAssert.assertTrue(res.body().contains("Administración de Usuarios y Roles (JettraSecurityDB)"), "Debe incluir la sección de administración de usuarios y roles");
+            JettraAssert.assertTrue(res.body().contains("jettraLoadUsers"), "Debe contener función de carga de usuarios");
             JettraAssert.assertTrue(res.body().contains("jettraLogin"), "Debe contener la función JS de autenticación");
             JettraAssert.assertTrue(res.body().contains("/api/v1/customers"), "Debe documentar ruta de clientes");
             JettraAssert.assertTrue(res.body().contains("/api/v1/orders"), "Debe documentar ruta de órdenes");
+        } finally {
+            app.stop();
+            deleteDir(tempDir.toFile());
+        }
+    }
+
+    @Test
+    @DisplayName("Verificar API REST de Gestión de Usuarios y Roles en JettraSecurityDB")
+    public void testSecurityUserAndRoleManagementAPI() throws Exception {
+        int port = findFreePort();
+        Path tempDir = Files.createTempDirectory("backend-test-sec-mgmt");
+        System.setProperty("server.port", String.valueOf(port));
+        System.setProperty("data.dir", tempDir.toString());
+
+        App app = new App();
+        try {
+            app.startApplication(new String[0]);
+            HttpClient client = HttpClient.newHttpClient();
+
+            // 1. Listar usuarios (debe existir al menos admin)
+            HttpRequest listReq = HttpRequest.newBuilder()
+                    .uri(URI.create("http://127.0.0.1:" + port + "/api/security/users"))
+                    .GET()
+                    .build();
+            HttpResponse<String> listRes = client.send(listReq, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, listRes.statusCode(), "Debe responder 200 OK");
+            JettraAssert.assertTrue(listRes.body().contains("admin"), "Debe contener usuario admin inicial");
+
+            // 2. Crear nuevo usuario en JettraSecurityDB
+            String newUserJson = """
+                {
+                    "username": "operario1",
+                    "password": "claveSegura123",
+                    "email": "operario1@jettra.io",
+                    "roles": ["OPERATOR", "USER"]
+                }
+                """;
+            HttpRequest createReq = HttpRequest.newBuilder()
+                    .uri(URI.create("http://127.0.0.1:" + port + "/api/security/users"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(newUserJson))
+                    .build();
+            HttpResponse<String> createRes = client.send(createReq, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(201, createRes.statusCode(), "Creación debe retornar 201 Created");
+            JettraAssert.assertTrue(createRes.body().contains("operario1"), "Debe confirmar creación de operario1");
+
+            // 3. Asignar rol adicional
+            String addRoleJson = """
+                {
+                    "username": "operario1",
+                    "role": "SUPERVISOR",
+                    "action": "add"
+                }
+                """;
+            HttpRequest addRoleReq = HttpRequest.newBuilder()
+                    .uri(URI.create("http://127.0.0.1:" + port + "/api/security/users/role"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(addRoleJson))
+                    .build();
+            HttpResponse<String> addRoleRes = client.send(addRoleReq, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, addRoleRes.statusCode(), "Asignación de rol debe responder 200");
+
+            // 4. Modificar estado
+            String statusJson = """
+                {
+                    "username": "operario1",
+                    "active": false
+                }
+                """;
+            HttpRequest statusReq = HttpRequest.newBuilder()
+                    .uri(URI.create("http://127.0.0.1:" + port + "/api/security/users/status"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(statusJson))
+                    .build();
+            HttpResponse<String> statusRes = client.send(statusReq, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, statusRes.statusCode(), "Cambio de estado debe responder 200");
+
+            // 5. Crear y listar rol
+            String roleJson = "{\"name\": \"AUDITOR\"}";
+            HttpRequest createRoleReq = HttpRequest.newBuilder()
+                    .uri(URI.create("http://127.0.0.1:" + port + "/api/security/roles"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(roleJson))
+                    .build();
+            HttpResponse<String> createRoleRes = client.send(createRoleReq, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(201, createRoleRes.statusCode(), "Creación de rol debe responder 201");
+
+            // 6. Eliminar usuario
+            HttpRequest delReq = HttpRequest.newBuilder()
+                    .uri(URI.create("http://127.0.0.1:" + port + "/api/security/users?username=operario1"))
+                    .DELETE()
+                    .build();
+            HttpResponse<String> delRes = client.send(delReq, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, delRes.statusCode(), "Eliminación de usuario debe responder 200");
         } finally {
             app.stop();
             deleteDir(tempDir.toFile());
