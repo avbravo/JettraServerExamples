@@ -1,0 +1,88 @@
+<aura:extend>
+    <div aura:id="feedback"></div>
+
+    <div class="ui-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem;">
+            <div>
+                <h2 style="font-size: 1.3rem; font-weight: 700; color: var(--text-main); margin: 0;">Formulario Reactivo JettraAura</h2>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Demostración de <code>CompoundPropertyModel</code> con binding automático por <code>aura:id</code>.</p>
+            </div>
+            <span class="badge" style="background: #1e3a8a; color: #93c5fd;">POJO Binding</span>
+        </div>
+
+        <form aura:id="userForm">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Nombre de Usuario:</label>
+                    <input type="text" aura:id="username" placeholder="ej. rvalenzuela" required style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.7rem; outline: none;" />
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Correo Electrónico:</label>
+                    <input type="email" aura:id="email" placeholder="usuario@correo.com" required style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.7rem; outline: none;" />
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Rol en el Sistema:</label>
+                    <select aura:id="role" style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.7rem; outline: none;">
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="OPERATOR">OPERATOR</option>
+                        <option value="USER">USER</option>
+                        <option value="AUDITOR">AUDITOR</option>
+                    </select>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Departamento:</label>
+                    <select aura:id="department" style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.7rem; outline: none;">
+                        <option value="Ingeniería">Ingeniería</option>
+                        <option value="Operaciones">Operaciones</option>
+                        <option value="Seguridad">Seguridad</option>
+                        <option value="Finanzas">Finanzas</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+                    <input type="checkbox" aura:id="active" style="width: 18px; height: 18px; accent-color: var(--primary);" />
+                    <span style="font-size: 0.9rem;">Usuario Activo en JettraSecurityDB</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+                    <input type="checkbox" aura:id="notificationsEnabled" style="width: 18px; height: 18px; accent-color: var(--primary);" />
+                    <span style="font-size: 0.9rem;">Recibir Alertas y Notificaciones del Servidor</span>
+                </label>
+            </div>
+
+            <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Notas / Biografía:</label>
+                <textarea aura:id="notes" rows="3" placeholder="Información adicional del usuario..." style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.7rem; outline: none;"></textarea>
+            </div>
+
+            <div>
+                <button type="submit" aura:id="btnSaveUser" class="btn-action">Guardar y Procesar Formulario</button>
+            </div>
+        </form>
+
+        <!-- VISTA PREVIA DE LOS DATOS VINCULADOS -->
+        <div style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1.25rem; margin-top: 2rem;">
+            <h4 style="color: #38bdf8; margin-bottom: 0.75rem; font-size: 1rem;">Estado Actual del Modelo Java (CompoundPropertyModel):</h4>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 0.5rem; font-size: 0.95rem;">
+                <div style="color: var(--text-muted); font-weight: 600;">Usuario:</div>
+                <div aura:id="previewUsername">-</div>
+
+                <div style="color: var(--text-muted); font-weight: 600;">Email:</div>
+                <div aura:id="previewEmail">-</div>
+
+                <div style="color: var(--text-muted); font-weight: 600;">Rol:</div>
+                <div aura:id="previewRole">-</div>
+
+                <div style="color: var(--text-muted); font-weight: 600;">Departamento:</div>
+                <div aura:id="previewDepartment">-</div>
+
+                <div style="color: var(--text-muted); font-weight: 600;">Estado:</div>
+                <div aura:id="previewStatus">-</div>
+            </div>
+        </div>
+    </div>
+</aura:extend>

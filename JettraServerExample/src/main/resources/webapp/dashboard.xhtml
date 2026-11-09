@@ -18,6 +18,8 @@
             </div>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                 <p:button outcome="/dashboard.xhtml" value="General" styleClass="ui-button-sm ui-button-info"/>
+                <p:button href="/aura/demo" value="✨ Portal Aura" styleClass="ui-button-sm ui-button-warning"/>
+                <p:button href="/aura/catalogo" value="📦 Catálogo Aura" styleClass="ui-button-sm ui-button-info"/>
                 <p:button href="/flux/catalogo" value="🛍️ Catálogo Flux" styleClass="ui-button-sm ui-button-success"/>
                 <p:button outcome="/dashboard.xhtml" value="📊 Métricas Flux" styleClass="ui-button-sm ui-button-secondary">
                     <f:param name="view" value="metrics"/>
@@ -58,6 +60,28 @@
                 <p>Cores CPU: #{dashboardBean.cpuCores}</p>
             </p:card>
         </div>
+
+        <p:panel header="✨ Suite de Ejemplos JettraAura (Wicket-Style 1:1 Binding)" style="margin-bottom: 1.5rem;">
+            <p>Framework web orientado a componentes con separación estricta HTML/Java y concurrencia Loom:</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <div style="border: 1px solid var(--border-subtle); padding: 1rem; border-radius: 8px;">
+                    <a href="/aura/demo" style="text-decoration:none; font-weight:bold; color:#38bdf8;">✨ Portal JettraAura</a>
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin:0.35rem 0 0 0;">Hub central con métricas en vivo y navegación general.</p>
+                </div>
+                <div style="border: 1px solid var(--border-subtle); padding: 1rem; border-radius: 8px;">
+                    <a href="/aura/catalogo" style="text-decoration:none; font-weight:bold; color:#10b981;">📦 Catálogo Dinámico (AuraListView)</a>
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin:0.35rem 0 0 0;">Iterador de colecciones JPA con formulario de alta rápida.</p>
+                </div>
+                <div style="border: 1px solid var(--border-subtle); padding: 1rem; border-radius: 8px;">
+                    <a href="/aura/formulario" style="text-decoration:none; font-weight:bold; color:#f59e0b;">📝 Formulario Reactivo (CPM)</a>
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin:0.35rem 0 0 0;">CompoundPropertyModel con vinculación automática de POJOs.</p>
+                </div>
+                <div style="border: 1px solid var(--border-subtle); padding: 1rem; border-radius: 8px;">
+                    <a href="/aura/contador" style="text-decoration:none; font-weight:bold; color:#a855f7;">⚡ Contador AJAX Parcial</a>
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin:0.35rem 0 0 0;">Actualizaciones quirúrgicas del DOM con Virtual Threads.</p>
+                </div>
+            </div>
+        </p:panel>
 
         <p:panel header="⚡ Vistas JettraFlux en Sección Center">
             <p>Accede directamente a los componentes reactivos renderizados dentro de esta sección central del Dashboard:</p>

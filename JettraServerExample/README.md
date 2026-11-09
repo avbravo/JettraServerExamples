@@ -6,7 +6,12 @@ Aplicación empresarial full-stack de referencia para **JettraServer**, desarrol
 
 ## 🚀 Características Principales
 
-- **Arquitectura Web Híbrida:** Vistas Facelets (`.xhtml`) con PrimeFaces y vistas reactivas en Java puro con **JettraFlux**.
+- **Arquitectura Web Híbrida:** Vistas Facelets (`.xhtml`) con PrimeFaces, vistas reactivas en Java puro con **JettraFlux** y páginas orientadas a componentes estilo Apache Wicket con **JettraAura**.
+- **Suite JettraAura (Wicket-Style 1:1):**
+  - **Asociación 1:1 HTML $\leftrightarrow$ Java:** Marcado HTML5 limpio e independiente de servidor con controladoras Java fuertemente tipadas.
+  - **Catálogo Dinámico (`AuraListView`):** Iteración eficiente sobre colecciones JPA.
+  - **Formularios con `CompoundPropertyModel`:** Vinculación directa de POJOs por `aura:id`.
+  - **Reactividad Quirúrgica con AJAX:** Actualización granular de elementos DOM sin recargas de página completas sobre Virtual Threads de Project Loom.
 - **Hamburger Menu Responsivo:** Navegación optimizada para escritorios, portátiles, tablets y móviles con colapso fluido y modo *off-canvas*.
 - **Swagger-UI Interactivo (`/swagger-ui`):**
   - **Acreditación JWT:** Inicio de sesión directo o token Bearer manual contra `JettraSecurityDB`.
@@ -83,6 +88,10 @@ Una vez iniciado el servidor, acceda a los siguientes recursos:
 | | `http://localhost:8080/flux/telemetry` | Telemetría del servidor y métricas Loom |
 | | `http://localhost:8080/flux/counter` | Componente interactivo reactivo |
 | | `http://localhost:8080/flux/catalogo` | Catálogo renderizado por JettraFlux |
+| **Suite JettraAura (Wicket-Style 1:1)** | `http://localhost:8080/aura/demo` | Portal central de JettraAura con métricas en vivo |
+| | `http://localhost:8080/aura/catalogo` | Catálogo iterativo (`AuraListView`) con alta rápida |
+| | `http://localhost:8080/aura/formulario` | Formulario POJO con `CompoundPropertyModel` |
+| | `http://localhost:8080/aura/contador` | Reactividad parcial quirúrgica con AJAX en Loom |
 | **Health & Métricas** | `http://localhost:8080/health` | Health Check (MicroProfile Health 4.0) |
 | | `http://localhost:8080/metrics` | Métricas JVM, almacenamiento y uptime |
 

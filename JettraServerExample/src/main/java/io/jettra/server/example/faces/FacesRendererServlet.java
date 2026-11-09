@@ -218,6 +218,8 @@ public class FacesRendererServlet extends HttpServlet {
             out.println("        </div>");
             out.println("        <div class=\"flux-tabs\">");
             out.println("          <a href=\"/dashboard.xhtml\" class=\"tab-pill active\">📊 General</a>");
+            out.println("          <a href=\"/aura/demo\" class=\"tab-pill\">✨ Portal Aura</a>");
+            out.println("          <a href=\"/aura/catalogo\" class=\"tab-pill\">📦 Catálogo Aura</a>");
             out.println("          <a href=\"/flux/catalogo\" class=\"tab-pill\">🛍️ " + escapeHtml(Messages.get("flux.catalog.title")) + "</a>");
             out.println("          <a href=\"/dashboard.xhtml?view=metrics\" class=\"tab-pill\">📊 Métricas Flux</a>");
             out.println("          <a href=\"/dashboard.xhtml?view=health\" class=\"tab-pill\">🩺 Health Flux</a>");
@@ -254,6 +256,35 @@ public class FacesRendererServlet extends HttpServlet {
             out.println("          <div class=\"kpi-sub\" style=\"color: var(--success);\">Estado Salud: OK (UP)</div>");
             out.println("        </div>");
 
+            out.println("      </div>");
+
+            // Sección Embebida JettraAura
+            out.println("      <div class=\"ui-panel\" style=\"background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-subtle); margin-bottom: 2rem; box-shadow: var(--shadow-sm);\">");
+            out.println("        <div style=\"display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;\">");
+            out.println("          <div>");
+            out.println("            <h3 style=\"margin: 0; font-size: 1.2rem; color: var(--text-main);\">✨ Suite de Ejemplos JettraAura (Wicket-Style 1:1 Binding)</h3>");
+            out.println("            <p style=\"margin: 0.25rem 0 0; color: var(--text-muted); font-size: 0.875rem;\">Arquitectura web orientada a componentes con marcado HTML puro, POJOs y Virtual Threads de Java 25</p>");
+            out.println("          </div>");
+            out.println("          <span style=\"background: #0284c7; color: white; padding: 0.35rem 0.85rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;\">JettraAura 1:1</span>");
+            out.println("        </div>");
+            out.println("        <div style=\"display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;\">");
+            out.println("          <a href=\"/aura/demo\" class=\"flux-card-link\">");
+            out.println("            <div style=\"font-weight: 700; color: #38bdf8; margin-bottom: 0.35rem;\">✨ Portal JettraAura</div>");
+            out.println("            <div style=\"font-size: 0.85rem; color: var(--text-muted);\">Hub central de navegación, métricas en vivo y explicación arquitectónica.</div>");
+            out.println("          </a>");
+            out.println("          <a href=\"/aura/catalogo\" class=\"flux-card-link\">");
+            out.println("            <div style=\"font-weight: 700; color: #10b981; margin-bottom: 0.35rem;\">📦 Catálogo Dinámico (AuraListView)</div>");
+            out.println("            <div style=\"font-size: 0.85rem; color: var(--text-muted);\">Iterador de colecciones JPA con formulario de alta rápida de productos.</div>");
+            out.println("          </a>");
+            out.println("          <a href=\"/aura/formulario\" class=\"flux-card-link\">");
+            out.println("            <div style=\"font-weight: 700; color: #f59e0b; margin-bottom: 0.35rem;\">📝 Formulario Reactivo (CPM)</div>");
+            out.println("            <div style=\"font-size: 0.85rem; color: var(--text-muted);\">CompoundPropertyModel con vinculación automática y FeedbackPanel.</div>");
+            out.println("          </a>");
+            out.println("          <a href=\"/aura/contador\" class=\"flux-card-link\">");
+            out.println("            <div style=\"font-weight: 700; color: #a855f7; margin-bottom: 0.35rem;\">⚡ Contador AJAX Parcial</div>");
+            out.println("            <div style=\"font-size: 0.85rem; color: var(--text-muted);\">Actualizaciones quirúrgicas del DOM con Virtual Threads de Loom.</div>");
+            out.println("          </a>");
+            out.println("        </div>");
             out.println("      </div>");
 
             // Sección Embebida JettraFlux dentro de la sección Center
@@ -652,6 +683,14 @@ public class FacesRendererServlet extends HttpServlet {
         out.println("        <a href=\"/flux/storage-monitor\" class=\"nav-link " + ("storage-monitor".equals(activeSection) ? "active" : "") + "\">🚀 Monitor Almacenamiento</a>");
         out.println("        <a href=\"/flux/telemetry\" class=\"nav-link " + ("telemetry".equals(activeSection) ? "active" : "") + "\">📈 Telemetría de Red</a>");
         out.println("        <a href=\"/flux/counter\" class=\"nav-link " + ("counter".equals(activeSection) ? "active" : "") + "\">🎛️ Contador Reactivo</a>");
+        out.println("      </nav>");
+
+        out.println("      <div style=\"font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-light); margin-bottom: 0.75rem; letter-spacing: 0.05em;\">✨ Ejemplos JettraAura (Wicket-Style)</div>");
+        out.println("      <nav style=\"display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1.75rem;\">");
+        out.println("        <a href=\"/aura/demo\" class=\"nav-link\">✨ Portal JettraAura</a>");
+        out.println("        <a href=\"/aura/catalogo\" class=\"nav-link\">📦 Catálogo Dinámico (ListView)</a>");
+        out.println("        <a href=\"/aura/formulario\" class=\"nav-link\">📝 Formulario Reactivo (CPM)</a>");
+        out.println("        <a href=\"/aura/contador\" class=\"nav-link\">⚡ Contador AJAX Parcial</a>");
         out.println("      </nav>");
 
         out.println("      <div style=\"font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-light); margin-bottom: 0.75rem; letter-spacing: 0.05em;\">🔌 Servicios RESTful &amp; Docs</div>");

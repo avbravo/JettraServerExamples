@@ -1,8 +1,13 @@
 package io.jettra.server.example;
 
+import io.jettra.aura.server.AuraModule;
 import io.jettra.server.core.JettraServer;
 import io.jettra.server.core.config.ServerConfig;
 import io.jettra.server.core.storage.StorageMode;
+import io.jettra.server.example.aura.AuraCatalogPage;
+import io.jettra.server.example.aura.AuraCounterPage;
+import io.jettra.server.example.aura.AuraPortalPage;
+import io.jettra.server.example.aura.AuraUserFormPage;
 import io.jettra.server.example.faces.FacesRendererServlet;
 import io.jettra.server.example.flux.CatalogoFlux;
 import io.jettra.server.example.flux.HealthFluxView;
@@ -122,6 +127,15 @@ public class App {
         server.get("/docs", (req, res) -> res.header("Location", "/swagger-ui").status(302).body(""));
         server.get("/api-docs", (req, res) -> res.header("Location", "/swagger-ui").status(302).body(""));
 
+        // 7. Conectar Módulo JettraAura (Framework Web Orientado a Componentes 1:1)
+        AuraModule aura = AuraModule.attach(server);
+        aura.getApplication().setCdiContainer(jakarta.getCdiContainer());
+        aura.page("/aura/demo", AuraPortalPage.class);
+        aura.page("/aura", AuraPortalPage.class);
+        aura.page("/aura/catalogo", AuraCatalogPage.class);
+        aura.page("/aura/formulario", AuraUserFormPage.class);
+        aura.page("/aura/contador", AuraCounterPage.class);
+
         // Iniciar el servidor
         try {
             server.start();
@@ -145,6 +159,11 @@ public class App {
         System.out.println("                         : http://localhost:" + port + "/flux/catalogo");
         System.out.println("                         : http://localhost:" + port + "/flux/metrics");
         System.out.println("                         : http://localhost:" + port + "/flux/health");
+        System.out.println(" -> Vistas JettraAura (Wicket-Style 1:1):");
+        System.out.println("                         : http://localhost:" + port + "/aura/demo");
+        System.out.println("                         : http://localhost:" + port + "/aura/catalogo");
+        System.out.println("                         : http://localhost:" + port + "/aura/formulario");
+        System.out.println("                         : http://localhost:" + port + "/aura/contador");
         System.out.println(" -> Endpoints REST       : http://localhost:" + port + "/api/productos");
         System.out.println("                         : http://localhost:" + port + "/api/info");
         System.out.println("==================================================================================");

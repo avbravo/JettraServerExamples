@@ -33,6 +33,11 @@
             <artifactId>jettra-server-flux</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.jettra</groupId>
+            <artifactId>JettraAura</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- PrimeFaces para Jakarta EE -->
         <dependency>

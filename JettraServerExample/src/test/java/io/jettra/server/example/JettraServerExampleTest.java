@@ -345,5 +345,73 @@ public class JettraServerExampleTest {
             server.stop();
         }
     }
+
+    @Test
+    @DisplayName("11. Verificar Suite JettraAura: Portal (/aura/demo) y Catálogo con AuraListView (/aura/catalogo)")
+    public void testJettraAuraPortalAndCatalog() throws Exception {
+        JettraServer server = App.startApplication(TEST_PORT + 10, StorageMode.JVM_RAM);
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+
+            // 1. Portal JettraAura
+            HttpRequest reqPortal = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + (TEST_PORT + 10) + "/aura/demo"))
+                .GET()
+                .build();
+            HttpResponse<String> resPortal = client.send(reqPortal, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, resPortal.statusCode(), "El portal de JettraAura debe responder HTTP 200");
+            JettraAssert.assertTrue(resPortal.body().contains("JettraAura: Arquitectura Web Orientada a Componentes"), "Debe contener el título del portal");
+            JettraAssert.assertTrue(resPortal.body().contains("JVM_RAM"), "Debe mostrar el modo de almacenamiento");
+            JettraAssert.assertTrue(resPortal.body().contains("/aura/catalogo"), "Debe contener el enlace al catálogo");
+
+            // 2. Catálogo Dinámico con AuraListView
+            HttpRequest reqCatalog = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + (TEST_PORT + 10) + "/aura/catalogo"))
+                .GET()
+                .build();
+            HttpResponse<String> resCatalog = client.send(reqCatalog, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, resCatalog.statusCode(), "El catálogo de JettraAura debe responder HTTP 200");
+            JettraAssert.assertTrue(resCatalog.body().contains("Catálogo JettraAura"), "Debe contener el encabezado del catálogo");
+            JettraAssert.assertTrue(resCatalog.body().contains("PRD-01"), "Debe listar el producto PRD-01 de JPA");
+            JettraAssert.assertTrue(resCatalog.body().contains("Servidor JettraEdge 1U"), "Debe listar el nombre del producto");
+            JettraAssert.assertTrue(resCatalog.body().contains("Registrar Nuevo Producto (JPA)"), "Debe contener el formulario de registro");
+
+        } finally {
+            server.stop();
+        }
+    }
+
+    @Test
+    @DisplayName("12. Verificar Suite JettraAura: Formulario con CompoundPropertyModel (/aura/formulario) y Contador AJAX (/aura/contador)")
+    public void testJettraAuraFormAndCounter() throws Exception {
+        JettraServer server = App.startApplication(TEST_PORT + 11, StorageMode.JVM_RAM);
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+
+            // 1. Formulario Reactivo con CompoundPropertyModel
+            HttpRequest reqForm = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + (TEST_PORT + 11) + "/aura/formulario"))
+                .GET()
+                .build();
+            HttpResponse<String> resForm = client.send(reqForm, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, resForm.statusCode(), "El formulario de JettraAura debe responder HTTP 200");
+            JettraAssert.assertTrue(resForm.body().contains("Formulario Reactivo JettraAura"), "Debe contener el título del formulario");
+            JettraAssert.assertTrue(resForm.body().contains("jettraAdmin"), "Debe contener el valor inicial del modelo");
+            JettraAssert.assertTrue(resForm.body().contains("admin@jettra.io"), "Debe contener el email del modelo");
+
+            // 2. Contador AJAX Parcial
+            HttpRequest reqCounter = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + (TEST_PORT + 11) + "/aura/contador"))
+                .GET()
+                .build();
+            HttpResponse<String> resCounter = client.send(reqCounter, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, resCounter.statusCode(), "El contador de JettraAura debe responder HTTP 200");
+            JettraAssert.assertTrue(resCounter.body().contains("Contador AJAX JettraAura"), "Debe contener el título del contador");
+            JettraAssert.assertTrue(resCounter.body().contains("btnIncrement"), "Debe contener el botón de incremento");
+
+        } finally {
+            server.stop();
+        }
+    }
 }
 
