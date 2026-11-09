@@ -8,7 +8,7 @@
         <groupId>io.jettra</groupId>
         <artifactId>JettraServer</artifactId>
         <version>1.0.0-SNAPSHOT</version>
-        <relativePath>../JettraServer/pom.xml</relativePath>
+        <relativePath>../jettraserver/pom.xml</relativePath>
     </parent>
 
     <artifactId>JettraServerExamples</artifactId>
@@ -17,8 +17,8 @@
     <description>Módulo agregador de proyectos y microservicios de ejemplo para JettraServer</description>
 
     <modules>
-        <module>JettraServerExample</module>
-        <module>JettraServerBackEndExample</module>
+        <module>WebExample</module>
+        <module>BackEndExample</module>
     </modules>
 </project>
 
