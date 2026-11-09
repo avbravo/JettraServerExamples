@@ -135,8 +135,12 @@ public class CatalogoFlux extends FluxView {
         Widget btnSubmit = Div.of(
                 Button.of(Messages.get("catalogo.flux.btn.save"))
                         .attribute("type", "submit")
-                        .modifier(new Modifier().cssClass("app-btn-primary"))
-        ).modifier(new Modifier().style("align-self: flex-end;"));
+                        .modifier(new Modifier().cssClass("app-btn-primary")),
+                Button.of("➕ Diálogo")
+                        .attribute("type", "button")
+                        .attribute("onclick", "openCatalogRegisterDialog()")
+                        .modifier(new Modifier().cssClass("app-btn-secondary"))
+        ).modifier(new Modifier().style("align-self: flex-end; display: flex; gap: 0.5rem;"));
 
         Widget addForm = Form.of(
                 InputHidden.of("action", "save"),
@@ -165,16 +169,24 @@ public class CatalogoFlux extends FluxView {
 
         List<List<Widget>> tableRows = new ArrayList<>();
         for (Product p : currentProducts) {
-            Widget deleteButton = Button.of(Messages.get("product.action.delete"))
-                    .attribute("type", "submit")
+            String jsId = p.getId() != null ? p.getId().replace("'", "\\'") : "";
+            String jsName = p.getName() != null ? p.getName().replace("'", "\\'") : "";
+            String jsCat = p.getCategory() != null ? p.getCategory().replace("'", "\\'") : "Hardware";
+            String jsPrice = String.format(java.util.Locale.US, "%.2f", p.getPrice());
+            String jsStock = String.valueOf(p.getStock());
+
+            Widget editButton = Button.of("✏️ Editar")
+                    .attribute("type", "button")
+                    .attribute("onclick", "openCatalogEditDialog('" + jsId + "', '" + jsName + "', '" + jsCat + "', '" + jsPrice + "', '" + jsStock + "')")
+                    .modifier(new Modifier().cssClass("app-btn-secondary").style("padding: 0.25rem 0.6rem; font-size: 0.8rem; color: var(--primary); border-color: var(--primary);"));
+
+            Widget deleteButton = Button.of("🗑️ " + Messages.get("product.action.delete"))
+                    .attribute("type", "button")
+                    .attribute("onclick", "openCatalogDeleteDialog('" + jsId + "', '" + jsName + "', '" + jsCat + "', '" + jsPrice + "', '" + jsStock + "')")
                     .modifier(new Modifier().cssClass("app-btn-danger").style("padding: 0.25rem 0.6rem; font-size: 0.8rem;"));
 
-            Widget deleteForm = Form.of(
-                    InputHidden.of("action", "delete"),
-                    InputHidden.of("id", p.getId()),
-                    InputHidden.of("returnTo", "/dashboard.xhtml?view=catalogo-flux"),
-                    deleteButton
-            ).action("/productos.xhtml").method("POST").modifier(new Modifier().style("display: inline; text-align: right;"));
+            Widget actionButtons = Div.of(editButton, deleteButton)
+                    .modifier(new Modifier().style("display: inline-flex; gap: 0.45rem; justify-content: flex-end; width: 100%;"));
 
             List<Widget> rowCells = List.of(
                     Text.of(p.getId()).modifier(new Modifier().style("font-weight: 700; color: var(--primary);")),
@@ -182,7 +194,7 @@ public class CatalogoFlux extends FluxView {
                     Badge.neutral(p.getCategory()),
                     Text.of(String.format("$%.2f", p.getPrice())).modifier(new Modifier().style("color: var(--success); font-weight: 700;")),
                     Text.of(p.getStock() + " " + Messages.get("product.units")),
-                    deleteForm
+                    actionButtons
             );
             tableRows.add(rowCells);
         }

@@ -23,11 +23,15 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Página de catálogo dinámico implementada con JettraAura.
+ * Página de catálogo dinámico implementada con JettraAura (variante optimizada de JettraFlux
+ * para plantillas .html y Jakarta Faces .xhtml).
  * Demuestra:
  * - AuraListView y AuraListItem para iterar sobre entidades JPA con eventos por fila.
  * - Operaciones completas CRUD: Guardar (Nuevo), Editar y Eliminar productos.
- * - Diálogos interactivos con AuraModal para Crear/Editar productos y Confirmar Eliminación.
+ * - Tres diálogos reactivos AuraModal:
+ *   1. registerModal: Diálogo para Registrar Datos de Nuevo Producto.
+ *   2. productModal: Diálogo para Editar Producto existente (y creación modal).
+ *   3. deleteModal: Diálogo de Confirmación de Eliminación de Producto.
  * - Formulario tipado con CompoundPropertyModel y actualizaciones reactivas con AuraAjaxRequestTarget.
  * - AuraFeedbackPanel para mensajes flash.
  */
@@ -40,12 +44,14 @@ public class AuraCatalogPage extends AuraTemplatePage {
     private ProductService productService;
 
     private final Product newProduct = new Product("", "", "Hardware", 100.0, 10);
+    private final Product registerProduct = new Product("", "", "Hardware", 100.0, 10);
     private final Product modalProduct = new Product("", "", "Hardware", 100.0, 10);
     private Product selectedForDelete;
     private boolean editMode = false;
 
     private AuraFeedbackPanel feedbackPanel;
     private AuraContainer catalogContainer;
+    private AuraModal registerModal;
     private AuraModal productModal;
     private AuraModal deleteModal;
 
@@ -60,10 +66,11 @@ public class AuraCatalogPage extends AuraTemplatePage {
         feedbackPanel.setOutputMarkupId(true);
         add(feedbackPanel);
 
-        // 2. Formulario de Alta Rápida en línea con CompoundPropertyModel
+        // 2. Formulario de Alta Rápida en línea con CompoundPropertyModel + botón para abrir diálogo de registro
         AuraForm<Product> inlineForm = new AuraForm<>("productForm", CompoundPropertyModel.of(newProduct), () -> {
             saveProductModel(newProduct, false);
         });
+        inlineForm.setOutputMarkupId(true);
 
         inlineForm.add(new AuraTextField<>("id"));
         inlineForm.add(new AuraTextField<>("name"));
@@ -71,6 +78,13 @@ public class AuraCatalogPage extends AuraTemplatePage {
         inlineForm.add(new AuraTextField<>("price", Double.class));
         inlineForm.add(new AuraTextField<>("stock", Integer.class));
         inlineForm.add(new AuraButton("btnSaveProduct"));
+
+        AuraAjaxButton btnOpenRegisterModal = new AuraAjaxButton("btnOpenRegisterModal", target -> {
+            resetRegisterProduct();
+            registerModal.show(target);
+        });
+        btnOpenRegisterModal.setDefaultFormProcessing(false);
+        inlineForm.add(btnOpenRegisterModal);
         add(inlineForm);
 
         // 3. Modelo desacoplado para la lista de productos
@@ -93,16 +107,13 @@ public class AuraCatalogPage extends AuraTemplatePage {
 
         catalogContainer.add(new AuraLabel("catalogCountBadge", () -> productsModel.getObject().size() + " Productos en JPA"));
 
-        // Botón para abrir diálogo modal en modo Nuevo Producto
-        catalogContainer.add(new AuraAjaxButton("btnOpenCreateModal", target -> {
-            editMode = false;
-            modalProduct.setId("");
-            modalProduct.setName("");
-            modalProduct.setCategory("Hardware");
-            modalProduct.setPrice(100.0);
-            modalProduct.setStock(10);
-            productModal.show(target);
-        }));
+        // Botón en la cabecera de la tabla para abrir el diálogo de Registrar Nuevo Producto
+        AuraAjaxButton btnOpenCreateModal = new AuraAjaxButton("btnOpenCreateModal", target -> {
+            resetRegisterProduct();
+            registerModal.show(target);
+        });
+        btnOpenCreateModal.setDefaultFormProcessing(false);
+        catalogContainer.add(btnOpenCreateModal);
 
         // 5. Tabla iterativa AuraListView con acciones Editar y Eliminar con diálogos AuraModal
         catalogContainer.add(new AuraListView<Product>("productList", productsModel, item -> {
@@ -113,7 +124,7 @@ public class AuraCatalogPage extends AuraTemplatePage {
             item.add(new AuraLabel("prodPrice", String.format("$%.2f", p.getPrice())));
             item.add(new AuraLabel("prodStock", String.valueOf(p.getStock())));
 
-            // Acción Editar: abre el diálogo AuraModal precargado con los datos del producto
+            // Acción Editar: abre el diálogo AuraModal de edición precargado con los datos del producto
             item.add(new AuraAjaxLink("btnEditProduct", target -> {
                 editMode = true;
                 modalProduct.setId(p.getId());
@@ -133,14 +144,49 @@ public class AuraCatalogPage extends AuraTemplatePage {
 
         add(catalogContainer);
 
-        // 6. Diálogo AuraModal para Crear / Editar Producto
-        productModal = new AuraModal("productModal", () -> editMode
+        // 6. Diálogo AuraModal dedicado para REGISTRAR DATOS (Nuevo Producto)
+        registerModal = new AuraModal("registerModal", "➕ Registrar Nuevo Producto");
+        registerModal.add(new AuraLabel("registerModalBadge", "MODO CREACIÓN • NUEVO REGISTRO EN CATÁLOGO JPA"));
+
+        AuraForm<Product> registerForm = new AuraForm<>("registerProductForm", CompoundPropertyModel.of(registerProduct), () -> {
+            if (saveProductModel(registerProduct, false)) {
+                resetRegisterProduct();
+                registerModal.hide();
+            }
+        });
+        registerForm.add(new AuraTextField<>("id"));
+        registerForm.add(new AuraTextField<>("name"));
+        registerForm.add(new AuraDropDownChoice<>("category", CATEGORIES));
+        registerForm.add(new AuraTextField<>("price", Double.class));
+        registerForm.add(new AuraTextField<>("stock", Integer.class));
+
+        registerForm.add(new AuraAjaxButton("btnRegisterSave", target -> {
+            if (saveProductModel(registerProduct, false)) {
+                resetRegisterProduct();
+                registerModal.hide(target);
+                refreshCatalogAjax(target);
+            } else {
+                target.add(feedbackPanel);
+            }
+        }));
+
+        AuraAjaxButton btnRegisterCancel = new AuraAjaxButton("btnRegisterCancel", target -> {
+            registerModal.hide(target);
+        });
+        btnRegisterCancel.setDefaultFormProcessing(false);
+        registerForm.add(btnRegisterCancel);
+
+        registerModal.add(registerForm);
+        add(registerModal);
+
+        // 7. Diálogo AuraModal para EDITAR Producto (también soporta guardar nuevos registros)
+        productModal = new AuraModal("productModal", () -> (editMode && modalProduct.getId() != null && !modalProduct.getId().isBlank())
                 ? "✏️ Editar Producto (" + modalProduct.getId() + ")"
-                : "➕ Registrar Nuevo Producto");
+                : "✏️ Editar / Guardar Producto");
 
         productModal.add(new AuraLabel("modalModeBadge", () -> editMode
                 ? "MODO EDICIÓN • ACTUALIZACIÓN TRANSACCIONAL JPA"
-                : "MODO CREACIÓN • NUEVO REGISTRO EN CATÁLOGO JPA"));
+                : "MODO CREACIÓN / EDICIÓN • PERSISTENCIA JPA"));
 
         AuraForm<Product> modalForm = new AuraForm<>("modalProductForm", CompoundPropertyModel.of(modalProduct), () -> {
             if (saveProductModel(modalProduct, editMode)) {
@@ -172,7 +218,7 @@ public class AuraCatalogPage extends AuraTemplatePage {
         productModal.add(modalForm);
         add(productModal);
 
-        // 7. Diálogo AuraModal para Confirmar Eliminación
+        // 8. Diálogo AuraModal para CONFIRMAR ELIMINACIÓN
         deleteModal = new AuraModal("deleteModal", "🗑️ Confirmar Eliminación de Producto");
 
         deleteModal.add(new AuraLabel("deleteConfirmMessage", () -> selectedForDelete != null
@@ -208,6 +254,21 @@ public class AuraCatalogPage extends AuraTemplatePage {
         deleteModal.add(btnCancelDelete);
 
         add(deleteModal);
+    }
+
+    private void resetRegisterProduct() {
+        int nextNum = 10;
+        ProductService ps = getProductService();
+        if (ps != null) {
+            try {
+                nextNum = ps.listAll().size() + 1;
+            } catch (Exception ignored) {}
+        }
+        registerProduct.setId(String.format("PRD-%02d", nextNum));
+        registerProduct.setName("");
+        registerProduct.setCategory("Hardware");
+        registerProduct.setPrice(100.0);
+        registerProduct.setStock(10);
     }
 
     private boolean saveProductModel(Product source, boolean isEdit) {
@@ -286,12 +347,20 @@ public class AuraCatalogPage extends AuraTemplatePage {
         return this;
     }
 
+    public AuraModal getRegisterModal() {
+        return registerModal;
+    }
+
     public AuraModal getProductModal() {
         return productModal;
     }
 
     public AuraModal getDeleteModal() {
         return deleteModal;
+    }
+
+    public Product getRegisterProduct() {
+        return registerProduct;
     }
 
     public Product getModalProduct() {

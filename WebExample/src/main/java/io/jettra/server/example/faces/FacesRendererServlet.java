@@ -385,6 +385,12 @@ public class FacesRendererServlet extends HttpServlet {
 
             if ("catalogo-flux".equals(viewName) || "catalogo".equals(viewName)) {
                 new CatalogoFlux(productService).renderSectionHtml(out);
+                renderCatalogDialogsAndScript(out, "/dashboard.xhtml?view=catalogo-flux");
+            } else if ("aura-catalogo".equals(viewName)) {
+                io.jettra.server.example.aura.AuraCatalogPage auraCatalog =
+                        io.jettra.aura.faces.AuraFacesBridge.resolvePage(req, io.jettra.server.example.aura.AuraCatalogPage.class);
+                auraCatalog.setProductService(productService);
+                out.println(io.jettra.aura.faces.AuraFacesBridge.renderSection(auraCatalog));
             } else if ("metrics".equals(viewName)) {
                 new MetricsFluxView(server).renderSectionHtml(out);
             } else if ("health".equals(viewName)) {
@@ -545,10 +551,13 @@ public class FacesRendererServlet extends HttpServlet {
         String activeStorage = getEffectiveStorageMode();
 
         renderTemplate(out, Messages.get("catalog.title"), user, activeStorage, "productos", () -> {
-            out.println("      <div style=\"display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem;\">");
+            out.println("      <div style=\"display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;\">");
             out.println("        <div>");
             out.println("          <h1 style=\"font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0;\">" + escapeHtml(Messages.get("catalog.title")) + " (Jakarta JPA 3.2)</h1>");
             out.println("          <p style=\"color: var(--text-muted); margin: 0.25rem 0 0;\">" + escapeHtml(Messages.get("catalog.subtitle", activeStorage)) + "</p>");
+            out.println("        </div>");
+            out.println("        <div>");
+            out.println("          <button type=\"button\" class=\"app-btn-primary\" style=\"background: #10b981;\" onclick=\"openCatalogRegisterDialog()\">➕ Registrar Nuevo Producto (Diálogo)</button>");
             out.println("        </div>");
             out.println("      </div>");
 
@@ -561,7 +570,10 @@ public class FacesRendererServlet extends HttpServlet {
             out.println("          <div style=\"flex: 1.5; min-width: 130px;\"><label style=\"display:block; font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-bottom:0.25rem;\">" + escapeHtml(Messages.get("catalog.category")) + "</label><input type=\"text\" name=\"category\" value=\"Hardware\" class=\"app-input\" /></div>");
             out.println("          <div style=\"flex: 1; min-width: 100px;\"><label style=\"display:block; font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-bottom:0.25rem;\">" + escapeHtml(Messages.get("catalog.price")) + " ($)</label><input type=\"number\" step=\"0.01\" name=\"price\" value=\"199.99\" class=\"app-input\" /></div>");
             out.println("          <div style=\"flex: 1; min-width: 80px;\"><label style=\"display:block; font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-bottom:0.25rem;\">" + escapeHtml(Messages.get("catalog.stock")) + "</label><input type=\"number\" name=\"stock\" value=\"25\" class=\"app-input\" /></div>");
-            out.println("          <div style=\"align-self: flex-end;\"><button type=\"submit\" class=\"app-btn-primary\">+ " + escapeHtml(Messages.get("catalog.button.add")) + "</button></div>");
+            out.println("          <div style=\"align-self: flex-end; display: flex; gap: 0.5rem;\">");
+            out.println("            <button type=\"submit\" class=\"app-btn-primary\">+ " + escapeHtml(Messages.get("catalog.button.add")) + "</button>");
+            out.println("            <button type=\"button\" class=\"app-btn-secondary\" onclick=\"openCatalogRegisterDialog()\">➕ Diálogo</button>");
+            out.println("          </div>");
             out.println("        </form>");
             out.println("      </div>");
 
@@ -581,6 +593,12 @@ public class FacesRendererServlet extends HttpServlet {
             out.println("          <tbody>");
 
             for (Product p : products) {
+                String jsId = escapeJs(p.getId());
+                String jsName = escapeJs(p.getName());
+                String jsCat = escapeJs(p.getCategory() != null ? p.getCategory() : "Hardware");
+                String jsPrice = String.format(java.util.Locale.US, "%.2f", p.getPrice());
+                String jsStock = String.valueOf(p.getStock());
+
                 out.println("            <tr>");
                 out.println("              <td style=\"font-weight: 700; color: var(--primary);\">" + escapeHtml(p.getId()) + "</td>");
                 out.println("              <td style=\"font-weight: 500; color: var(--text-main);\">" + escapeHtml(p.getName()) + "</td>");
@@ -588,11 +606,10 @@ public class FacesRendererServlet extends HttpServlet {
                 out.println("              <td style=\"color: var(--success); font-weight: 700;\">$" + String.format("%.2f", p.getPrice()) + "</td>");
                 out.println("              <td style=\"color: var(--text-main);\">" + p.getStock() + " un.</td>");
                 out.println("              <td style=\"text-align: right;\">");
-                out.println("                <form method=\"post\" action=\"/productos.xhtml\" style=\"display: inline;\">");
-                out.println("                  <input type=\"hidden\" name=\"action\" value=\"delete\" />");
-                out.println("                  <input type=\"hidden\" name=\"id\" value=\"" + escapeHtml(p.getId()) + "\" />");
-                out.println("                  <button type=\"submit\" class=\"app-btn-danger\" style=\"padding: 0.25rem 0.6rem; font-size: 0.8rem;\">" + escapeHtml(Messages.get("catalog.button.delete")) + "</button>");
-                out.println("                </form>");
+                out.println("                <div style=\"display: inline-flex; gap: 0.45rem; align-items: center;\">");
+                out.println("                  <button type=\"button\" class=\"app-btn-secondary\" style=\"padding: 0.25rem 0.65rem; font-size: 0.8rem; color: var(--primary); border-color: var(--primary);\" onclick=\"openCatalogEditDialog('" + jsId + "', '" + jsName + "', '" + jsCat + "', '" + jsPrice + "', '" + jsStock + "')\">✏️ Editar</button>");
+                out.println("                  <button type=\"button\" class=\"app-btn-danger\" style=\"padding: 0.25rem 0.65rem; font-size: 0.8rem;\" onclick=\"openCatalogDeleteDialog('" + jsId + "', '" + jsName + "', '" + jsCat + "', '" + jsPrice + "', '" + jsStock + "')\">🗑️ " + escapeHtml(Messages.get("catalog.button.delete")) + "</button>");
+                out.println("                </div>");
                 out.println("              </td>");
                 out.println("            </tr>");
             }
@@ -600,7 +617,120 @@ public class FacesRendererServlet extends HttpServlet {
             out.println("          </tbody>");
             out.println("        </table>");
             out.println("      </div>");
+
+            renderCatalogDialogsAndScript(out, "/productos.xhtml");
         });
+    }
+
+    private void renderCatalogDialogsAndScript(PrintWriter out, String returnToUrl) {
+        String safeReturn = escapeHtml(returnToUrl != null ? returnToUrl : "/productos.xhtml");
+        // 1. Diálogo Modal para Registrar Nuevo Producto
+        out.println("      <div id=\"catalogRegisterDialog\" style=\"display:none; position:fixed; inset:0; background:rgba(15,23,42,0.75); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:1rem;\">");
+        out.println("        <div class=\"ui-card\" style=\"background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:14px; width:100%; max-width:520px; padding:1.5rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);\">");
+        out.println("          <div style=\"display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-subtle); padding-bottom:0.85rem; margin-bottom:1rem;\">");
+        out.println("            <h3 style=\"margin:0; font-size:1.15rem; font-weight:700; color:var(--text-main);\">➕ Registrar Nuevo Producto</h3>");
+        out.println("            <button type=\"button\" onclick=\"closeCatalogDialog('catalogRegisterDialog')\" style=\"background:transparent; border:none; color:var(--text-muted); font-size:1.25rem; cursor:pointer;\">✕</button>");
+        out.println("          </div>");
+        out.println("          <form method=\"post\" action=\"/productos.xhtml\" style=\"display:flex; flex-direction:column; gap:0.85rem;\">");
+        out.println("            <input type=\"hidden\" name=\"action\" value=\"save\" />");
+        out.println("            <input type=\"hidden\" name=\"returnTo\" value=\"" + safeReturn + "\" />");
+        out.println("            <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Código ID:</label><input type=\"text\" id=\"regDialogId\" name=\"id\" required class=\"app-input\" placeholder=\"PRD-XX\" /></div>");
+        out.println("            <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Nombre del Producto:</label><input type=\"text\" id=\"regDialogName\" name=\"name\" required class=\"app-input\" placeholder=\"Ej. Switch Óptico Jettra\" /></div>");
+        out.println("            <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Categoría:</label>");
+        out.println("              <select id=\"regDialogCategory\" name=\"category\" class=\"app-input\">");
+        out.println("                <option value=\"Hardware\">Hardware</option><option value=\"Software\">Software</option><option value=\"Redes\">Redes</option><option value=\"Almacenamiento\">Almacenamiento</option><option value=\"Add-on\">Add-on</option>");
+        out.println("              </select>");
+        out.println("            </div>");
+        out.println("            <div style=\"display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;\">");
+        out.println("              <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Precio ($):</label><input type=\"number\" step=\"0.01\" id=\"regDialogPrice\" name=\"price\" value=\"199.99\" required class=\"app-input\" /></div>");
+        out.println("              <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Stock Inicial:</label><input type=\"number\" id=\"regDialogStock\" name=\"stock\" value=\"15\" required class=\"app-input\" /></div>");
+        out.println("            </div>");
+        out.println("            <div style=\"display:flex; justify-content:flex-end; gap:0.75rem; margin-top:0.5rem; padding-top:0.85rem; border-top:1px solid var(--border-subtle);\">");
+        out.println("              <button type=\"button\" class=\"app-btn-secondary\" onclick=\"closeCatalogDialog('catalogRegisterDialog')\">Cancelar</button>");
+        out.println("              <button type=\"submit\" class=\"app-btn-primary\" style=\"background:#10b981;\">➕ Registrar Producto</button>");
+        out.println("            </div>");
+        out.println("          </form>");
+        out.println("        </div>");
+        out.println("      </div>");
+
+        // 2. Diálogo Modal para Editar Producto
+        out.println("      <div id=\"catalogEditDialog\" style=\"display:none; position:fixed; inset:0; background:rgba(15,23,42,0.75); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:1rem;\">");
+        out.println("        <div class=\"ui-card\" style=\"background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:14px; width:100%; max-width:520px; padding:1.5rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);\">");
+        out.println("          <div style=\"display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-subtle); padding-bottom:0.85rem; margin-bottom:1rem;\">");
+        out.println("            <h3 id=\"editDialogTitle\" style=\"margin:0; font-size:1.15rem; font-weight:700; color:var(--text-main);\">✏️ Editar Producto</h3>");
+        out.println("            <button type=\"button\" onclick=\"closeCatalogDialog('catalogEditDialog')\" style=\"background:transparent; border:none; color:var(--text-muted); font-size:1.25rem; cursor:pointer;\">✕</button>");
+        out.println("          </div>");
+        out.println("          <form method=\"post\" action=\"/productos.xhtml\" style=\"display:flex; flex-direction:column; gap:0.85rem;\">");
+        out.println("            <input type=\"hidden\" name=\"action\" value=\"save\" />");
+        out.println("            <input type=\"hidden\" name=\"returnTo\" value=\"" + safeReturn + "\" />");
+        out.println("            <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Código ID:</label><input type=\"text\" id=\"editDialogId\" name=\"id\" readonly class=\"app-input\" style=\"opacity:0.85;\" /></div>");
+        out.println("            <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Nombre del Producto:</label><input type=\"text\" id=\"editDialogName\" name=\"name\" required class=\"app-input\" /></div>");
+        out.println("            <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Categoría:</label>");
+        out.println("              <select id=\"editDialogCategory\" name=\"category\" class=\"app-input\">");
+        out.println("                <option value=\"Hardware\">Hardware</option><option value=\"Software\">Software</option><option value=\"Redes\">Redes</option><option value=\"Almacenamiento\">Almacenamiento</option><option value=\"Add-on\">Add-on</option>");
+        out.println("              </select>");
+        out.println("            </div>");
+        out.println("            <div style=\"display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;\">");
+        out.println("              <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Precio ($):</label><input type=\"number\" step=\"0.01\" id=\"editDialogPrice\" name=\"price\" required class=\"app-input\" /></div>");
+        out.println("              <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Stock Disponible:</label><input type=\"number\" id=\"editDialogStock\" name=\"stock\" required class=\"app-input\" /></div>");
+        out.println("            </div>");
+        out.println("            <div style=\"display:flex; justify-content:flex-end; gap:0.75rem; margin-top:0.5rem; padding-top:0.85rem; border-top:1px solid var(--border-subtle);\">");
+        out.println("              <button type=\"button\" class=\"app-btn-secondary\" onclick=\"closeCatalogDialog('catalogEditDialog')\">Cancelar</button>");
+        out.println("              <button type=\"submit\" class=\"app-btn-primary\">💾 Guardar Cambios</button>");
+        out.println("            </div>");
+        out.println("          </form>");
+        out.println("        </div>");
+        out.println("      </div>");
+
+        // 3. Diálogo Modal para Confirmar Eliminación
+        out.println("      <div id=\"catalogDeleteDialog\" style=\"display:none; position:fixed; inset:0; background:rgba(15,23,42,0.75); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:1rem;\">");
+        out.println("        <div class=\"ui-card\" style=\"background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:14px; width:100%; max-width:480px; padding:1.5rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);\">");
+        out.println("          <div style=\"display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-subtle); padding-bottom:0.85rem; margin-bottom:1rem;\">");
+        out.println("            <h3 style=\"margin:0; font-size:1.15rem; font-weight:700; color:var(--text-main);\">🗑️ Confirmar Eliminación de Producto</h3>");
+        out.println("            <button type=\"button\" onclick=\"closeCatalogDialog('catalogDeleteDialog')\" style=\"background:transparent; border:none; color:var(--text-muted); font-size:1.25rem; cursor:pointer;\">✕</button>");
+        out.println("          </div>");
+        out.println("          <p id=\"deleteDialogMsg\" style=\"font-size:0.95rem; font-weight:600; color:var(--text-main); margin:0 0 0.85rem 0;\">¿Está seguro que desea eliminar este producto?</p>");
+        out.println("          <div id=\"deleteDialogDetails\" style=\"background:var(--danger-light); border:1px solid var(--danger); color:var(--danger); padding:0.75rem 1rem; border-radius:8px; font-size:0.85rem; margin-bottom:1rem;\"></div>");
+        out.println("          <form method=\"post\" action=\"/productos.xhtml\" style=\"display:flex; justify-content:flex-end; gap:0.75rem; padding-top:0.85rem; border-top:1px solid var(--border-subtle);\">");
+        out.println("            <input type=\"hidden\" name=\"action\" value=\"delete\" />");
+        out.println("            <input type=\"hidden\" name=\"returnTo\" value=\"" + safeReturn + "\" />");
+        out.println("            <input type=\"hidden\" id=\"deleteDialogId\" name=\"id\" value=\"\" />");
+        out.println("            <button type=\"button\" class=\"app-btn-secondary\" onclick=\"closeCatalogDialog('catalogDeleteDialog')\">Cancelar</button>");
+        out.println("            <button type=\"submit\" class=\"app-btn-danger\">🗑️ Confirmar Eliminación</button>");
+        out.println("          </form>");
+        out.println("        </div>");
+        out.println("      </div>");
+
+        out.println("      <script>");
+        out.println("        function openCatalogRegisterDialog() {");
+        out.println("          const d = document.getElementById('catalogRegisterDialog');");
+        out.println("          if (d) d.style.display = 'flex';");
+        out.println("        }");
+        out.println("        function openCatalogEditDialog(id, name, category, price, stock) {");
+        out.println("          document.getElementById('editDialogTitle').textContent = '✏️ Editar Producto (' + id + ')';");
+        out.println("          document.getElementById('editDialogId').value = id;");
+        out.println("          document.getElementById('editDialogName').value = name;");
+        out.println("          document.getElementById('editDialogCategory').value = category || 'Hardware';");
+        out.println("          document.getElementById('editDialogPrice').value = price;");
+        out.println("          document.getElementById('editDialogStock').value = stock;");
+        out.println("          document.getElementById('catalogEditDialog').style.display = 'flex';");
+        out.println("        }");
+        out.println("        function openCatalogDeleteDialog(id, name, category, price, stock) {");
+        out.println("          document.getElementById('deleteDialogId').value = id;");
+        out.println("          document.getElementById('deleteDialogMsg').textContent = '¿Está seguro que desea eliminar el producto \"' + name + '\" (' + id + ')?';");
+        out.println("          document.getElementById('deleteDialogDetails').textContent = 'Categoría: ' + category + ' | Precio: $' + price + ' | Stock: ' + stock + ' unidades';");
+        out.println("          document.getElementById('catalogDeleteDialog').style.display = 'flex';");
+        out.println("        }");
+        out.println("        function closeCatalogDialog(dialogId) {");
+        out.println("          const d = document.getElementById(dialogId);");
+        out.println("          if (d) d.style.display = 'none';");
+        out.println("        }");
+        out.println("      </script>");
+    }
+
+    private String escapeJs(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("'", "\\'").replace("\"", "&quot;");
     }
 
     private void renderUsuarios(HttpServletRequest req, HttpServletResponse res) throws IOException {

@@ -375,7 +375,8 @@ public class WebExampleTest {
             JettraAssert.assertTrue(resCatalog.body().contains("PRD-01"), "Debe listar el producto PRD-01 de JPA");
             JettraAssert.assertTrue(resCatalog.body().contains("Servidor JettraEdge 1U"), "Debe listar el nombre del producto");
             JettraAssert.assertTrue(resCatalog.body().contains("Registrar Nuevo Producto (JPA)"), "Debe contener el formulario de registro");
-            JettraAssert.assertTrue(resCatalog.body().contains("aura-productModal"), "Debe renderizar el diálogo AuraModal de creación/edición");
+            JettraAssert.assertTrue(resCatalog.body().contains("aura-registerModal"), "Debe renderizar el diálogo AuraModal de registro de datos");
+            JettraAssert.assertTrue(resCatalog.body().contains("aura-productModal"), "Debe renderizar el diálogo AuraModal de edición");
             JettraAssert.assertTrue(resCatalog.body().contains("aura-deleteModal"), "Debe renderizar el diálogo AuraModal de confirmación de eliminación");
             JettraAssert.assertTrue(resCatalog.body().contains("Editar"), "Debe incluir el botón Editar por fila");
             JettraAssert.assertTrue(resCatalog.body().contains("Eliminar"), "Debe incluir el botón Eliminar por fila");
@@ -436,8 +437,21 @@ public class WebExampleTest {
             JettraAssert.assertEquals(200, resInit.statusCode(), "Catálogo inicial debe responder 200");
             String cookie = resInit.headers().firstValue("Set-Cookie").orElse("");
 
-            // 2. GUARDAR nuevo producto (PRD-99) mediante el diálogo AuraModal (btnModalSave vía AJAX)
-            String savePayload = "aura:ajax=true&aura:target=productModal:modalProductForm:btnModalSave&aura:event=click"
+            // 2. REGISTRAR DATOS: Abrir diálogo registerModal (btnOpenCreateModal) y guardar nuevo producto (PRD-99)
+            String openRegisterPayload = "aura:ajax=true&aura:target=catalogContainer:btnOpenCreateModal&aura:event=click";
+            HttpRequest reqOpenRegister = HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .header("Cookie", cookie)
+                .POST(HttpRequest.BodyPublishers.ofString(openRegisterPayload))
+                .build();
+            HttpResponse<String> resOpenRegister = client.send(reqOpenRegister, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, resOpenRegister.statusCode(), "Apertura de modal de registro debe responder 200");
+            JettraAssert.assertTrue(resOpenRegister.body().trim().startsWith("{\"updates\":"), "La respuesta AJAX debe ser un objeto JSON directo");
+            JettraAssert.assertTrue(resOpenRegister.body().contains("Registrar Nuevo Producto"), "El diálogo registerModal debe abrirse");
+            JettraAssert.assertTrue(resOpenRegister.body().contains("display: flex;"), "El diálogo registerModal debe mostrarse abierto");
+
+            String savePayload = "aura:ajax=true&aura:target=registerModal:registerProductForm:btnRegisterSave&aura:event=click"
                 + "&id=PRD-99&name=Router+JettraCore+X1&category=Redes&price=3200.50&stock=12";
             HttpRequest reqSave = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl))

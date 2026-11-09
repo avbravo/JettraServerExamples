@@ -6,12 +6,12 @@ Aplicación empresarial full-stack de referencia para **JettraServer**, desarrol
 
 ## 🚀 Características Principales
 
-- **Arquitectura Web Híbrida:** Vistas Facelets (`.xhtml`) con PrimeFaces, vistas reactivas en Java puro con **JettraFlux** y páginas orientadas a componentes estilo con **JettraAura**.
-- **Suite JettraAura :**
-  - **Asociación 1:1 HTML $\leftrightarrow$ Java:** Marcado HTML5 limpio e independiente de servidor con controladoras Java fuertemente tipadas.
-  - **Catálogo Dinámico (`AuraListView`):** Iteración eficiente sobre colecciones JPA.
-  - **Formularios con `CompoundPropertyModel`:** Vinculación directa de POJOs por `aura:id`.
-  - **Reactividad Quirúrgica con AJAX:** Actualización granular de elementos DOM sin recargas de página completas sobre Virtual Threads de Project Loom.
+- **Arquitectura Web Híbrida:** Vistas Facelets (`.xhtml`) con PrimeFaces, vistas reactivas en Java puro con **JettraFlux** y páginas orientadas a plantillas `.html`/`.xhtml` con **JettraAura** (variante optimizada y simplificada de JettraFlux).
+- **Suite JettraAura (Variante JettraFlux para HTML y Jakarta Faces XHTML):**
+  - **Asociación 1:1 HTML/XHTML $\leftrightarrow$ Java:** Marcado `.html` y `.xhtml` limpio con vinculación por `aura:id` o `flux:id` e interoperabilidad directa con `JettraFlux` (`AuraFluxWidget`, `toFluxWidget()`, `AuraFacesBridge`).
+  - **Catálogo Dinámico (`AuraListView` + `AuraModal`):** Iteración sobre colecciones JPA con operaciones completas CRUD y tres diálogos interactivos (`AuraModal`) para **Registrar Datos**, **Editar Producto** y **Confirmar Eliminación**.
+  - **Formularios con `CompoundPropertyModel`:** Vinculación directa de POJOs por `aura:id` / `flux:id`.
+  - **Control de Eventos y Reactividad Quirúrgica con AJAX:** Eventos tipados (`AuraEvent`, `AuraEventListener`, `@AuraAction`) y actualización granular del DOM sin recargas de página completas sobre Virtual Threads de Project Loom.
 - **Hamburger Menu Responsivo:** Navegación optimizada para escritorios, portátiles, tablets y móviles con colapso fluido y modo *off-canvas*.
 - **Swagger-UI Interactivo (`/swagger-ui`):**
   - **Acreditación JWT:** Inicio de sesión directo o token Bearer manual contra `JettraSecurityDB`.
