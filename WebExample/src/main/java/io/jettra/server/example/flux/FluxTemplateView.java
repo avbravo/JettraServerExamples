@@ -1,20 +1,34 @@
 package io.jettra.server.example.flux;
 
 import io.jettra.flux.core.FluxView;
+import io.jettra.flux.core.Modifier;
 import io.jettra.flux.core.Widget;
-import io.jettra.flux.theme.Themes;
+import io.jettra.flux.widgets.Badge;
+import io.jettra.flux.widgets.Button;
+import io.jettra.flux.widgets.Div;
+import io.jettra.flux.widgets.Header;
+import io.jettra.flux.widgets.Link;
+import io.jettra.flux.widgets.Paragraph;
 import io.jettra.flux.widgets.RawHtml;
+import io.jettra.flux.widgets.Row;
+import io.jettra.flux.widgets.Text;
 import io.jettra.server.core.JettraServer;
 import io.jettra.server.core.storage.StorageMetrics;
 import io.jettra.server.example.model.User;
 import io.jettra.server.example.util.Messages;
+import io.jettra.server.flux.FluxRenderer;
 import java.io.PrintWriter;
 
 /**
  * Plantilla (Template) exclusiva para el área de ejemplos de JettraFlux en WebExample.
- * Diseñada específicamente para envolver las vistas reactivas de JettraFlux
+ * Construida íntegramente mediante un árbol de componentes Widget de JettraFlux
+ * (Div, Row, Column, Header, Button, Link, Text, Badge, Paragraph, Modifier, RawHtml),
+ * sin utilizar StringBuilder ni concatenaciones manuales de documentos HTML.
+ *
+ * Diseñada exclusivamente para envolver las vistas reactivas de JettraFlux
  * (/flux/catalogo, /flux/metrics, /flux/health, /flux/storage-monitor, /flux/telemetry, /flux/counter)
- * sin afectar la plantilla de Jakarta Faces (.xhtml) ni la plantilla de JettraAura (/aura/*).
+ * manteniendo total aislamiento visual y arquitectónico respecto a Jakarta Faces (.xhtml)
+ * y la suite JettraAura (/aura/*).
  */
 public class FluxTemplateView extends FluxView {
 
@@ -49,147 +63,257 @@ public class FluxTemplateView extends FluxView {
             }
         }
         String prop = System.getProperty("storage.mode");
-        if (prop == null || prop.isBlank()) prop = System.getProperty("jettra.storage.mode");
+        if (prop == null || prop.isBlank()) {
+            prop = System.getProperty("jettra.storage.mode");
+        }
         return (prop != null && !prop.isBlank()) ? prop.trim() : "JVM_RAM";
     }
 
     @Override
     public Widget build() {
-        return RawHtml.of(renderFullDocument());
+        return buildTemplateTree();
     }
 
-    public String renderFullDocument() {
-        String renderedChild = contentWidget != null ? contentWidget.render(Themes.Core()) : "";
-        StringBuilder sb = new StringBuilder(16384);
+    /**
+     * Construye el árbol jerárquico de componentes JettraFlux que da forma a la plantilla.
+     */
+    private Widget buildTemplateTree() {
+        // Estilos CSS y scripts reactivos encapsulados en un widget RawHtml
+        Widget stylesAndScripts = RawHtml.of(getFluxTemplateStylesAndScripts());
 
-        sb.append("<!DOCTYPE html>\n");
-        sb.append("<html lang=\"es\" data-theme=\"dark\">\n");
-        sb.append("<head>\n");
-        sb.append("  <meta charset=\"UTF-8\" />\n");
-        sb.append("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n");
-        sb.append("  <title>").append(escapeHtml(title)).append(" - JettraFlux Template</title>\n");
-        sb.append(getFluxTemplateStylesAndScripts());
-        sb.append("</head>\n");
-        sb.append("<body class=\"app-body flux-template-body\" style=\"margin: 0; display: flex; flex-direction: column; min-height: 100vh;\">\n");
+        // Backdrop para apertura de menú en dispositivos móviles
+        Div backdrop = Div.of();
+        backdrop.id("sidebarBackdrop");
+        backdrop.modifier(new Modifier()
+                .cssClass("sidebar-backdrop")
+                .attribute("onclick", "toggleSidebar()"));
 
-        // Backdrop para sidebar móvil
-        sb.append("  <div id=\"sidebarBackdrop\" class=\"sidebar-backdrop\" onclick=\"toggleSidebar()\"></div>\n");
+        // Cabecera superior exclusiva JettraFlux
+        Widget topbar = buildTopBar();
 
-        // 1. TOPBAR EXCLUSIVO DE JETTRAFLUX
-        sb.append("  <header class=\"ui-layout-top flux-layout-top\">\n");
-        sb.append("    <div style=\"display: flex; align-items: center; gap: 0.75rem;\">\n");
-        sb.append("      <button class=\"hamburger-btn\" type=\"button\" onclick=\"toggleSidebar()\" aria-label=\"Alternar menú JettraFlux\" title=\"Colapsar / Expandir menú JettraFlux\">\n");
-        sb.append("        <span class=\"hamburger-bar\"></span>\n");
-        sb.append("        <span class=\"hamburger-bar\"></span>\n");
-        sb.append("        <span class=\"hamburger-bar\"></span>\n");
-        sb.append("      </button>\n");
-        sb.append("      <div class=\"flux-brand-badge\">JF</div>\n");
-        sb.append("      <div style=\"display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;\">\n");
-        sb.append("        <span style=\"font-weight: 800; font-size: 1.12rem; letter-spacing: -0.02em; color: #ffffff;\">JettraFlux Studio</span>\n");
-        sb.append("        <span class=\"hide-mobile\" style=\"font-size: 0.72rem; font-weight: 700; background: rgba(168, 85, 247, 0.28); border: 1px solid rgba(192, 132, 252, 0.45); color: #f3e8ff; padding: 0.15rem 0.55rem; border-radius: 9999px;\">Pure Java 25 Reactive UI</span>\n");
-        sb.append("      </div>\n");
-        sb.append("    </div>\n");
+        // Contenedor principal: Sidebar lateral exclusivo + Área central
+        Widget layoutWrapper = buildLayoutWrapper();
 
-        sb.append("    <div class=\"top-right-group\">\n");
-        sb.append("      <button onclick=\"toggleTheme()\" class=\"theme-toggle-btn\" type=\"button\" title=\"Alternar Tema Claro / Oscuro\" id=\"btnThemeToggle\">\n");
-        sb.append("        <span id=\"themeIcon\">🌙</span> <span id=\"themeLabel\" class=\"hide-mobile\">Oscuro</span>\n");
-        sb.append("      </button>\n");
-        sb.append("      <span class=\"hide-mobile\" style=\"background: rgba(15, 23, 42, 0.45); border: 1px solid rgba(148, 163, 184, 0.25); color: #e2e8f0; font-size: 0.8rem; padding: 0.3rem 0.65rem; border-radius: 6px;\">Modo: <strong style=\"color:#38bdf8;\">").append(escapeHtml(storageMode)).append("</strong></span>\n");
-        sb.append("      <span class=\"hide-mobile\" style=\"font-size: 0.85rem; color: #f1f5f9;\">👤 ").append(escapeHtml(user.getFullName())).append("</span>\n");
-        sb.append("      <a href=\"/logout\" class=\"app-btn-danger\" style=\"text-decoration: none; font-size: 0.8rem; padding: 0.35rem 0.75rem;\">Cerrar Sesión</a>\n");
-        sb.append("    </div>\n");
-        sb.append("  </header>\n");
+        // Pie de página exclusivo JettraFlux
+        Widget footer = buildFooter();
 
-        // 2. WRAPPER PRINCIPAL (SIDEBAR EXCLUSIVO JETTRAFLUX + ÁREA CENTRAL)
-        sb.append("  <div class=\"ui-layout-wrapper flux-layout-wrapper\">\n");
-
-        // LEFT SIDEBAR EXCLUSIVO DE JETTRAFLUX
-        sb.append("    <aside id=\"appSidebar\" class=\"ui-layout-left flux-layout-left\">\n");
-        sb.append("      <div class=\"flux-sidebar-banner\">\n");
-        sb.append("        <div style=\"font-weight: 800; font-size: 0.88rem; color: #c084fc; display: flex; align-items: center; gap: 0.4rem;\">⚡ Motor JettraFlux</div>\n");
-        sb.append("        <div style=\"font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;\">Plantilla exclusiva para vistas reactivas en Java 25 puro</div>\n");
-        sb.append("      </div>\n");
-
-        sb.append("      <div class=\"flux-menu-heading\">⚡ Suite Ejemplos JettraFlux</div>\n");
-        sb.append("      <nav style=\"display: flex; flex-direction: column; gap: 0.28rem; margin-bottom: 1.6rem;\">\n");
-        sb.append("        <a href=\"/flux/catalogo\" class=\"nav-link ").append(isActive("catalogo-flux", "catalogo") ? "active" : "").append("\">🛍️ Catálogo Reactivo (Flux)</a>\n");
-        sb.append("        <a href=\"/flux/metrics\" class=\"nav-link ").append(isActive("metrics") ? "active" : "").append("\">📊 Métricas del Servidor</a>\n");
-        sb.append("        <a href=\"/flux/health\" class=\"nav-link ").append(isActive("health") ? "active" : "").append("\">🩺 Estado de Salud (Health)</a>\n");
-        sb.append("        <a href=\"/flux/storage-monitor\" class=\"nav-link ").append(isActive("storage-monitor") ? "active" : "").append("\">🚀 Monitor Almacenamiento</a>\n");
-        sb.append("        <a href=\"/flux/telemetry\" class=\"nav-link ").append(isActive("telemetry") ? "active" : "").append("\">📈 Telemetría en Tiempo Real</a>\n");
-        sb.append("        <a href=\"/flux/counter\" class=\"nav-link ").append(isActive("counter") ? "active" : "").append("\">🎛️ Contador Reactivo</a>\n");
-        sb.append("      </nav>\n");
-
-        sb.append("      <div class=\"flux-menu-heading\">🖥️ Área Jakarta Faces (.xhtml)</div>\n");
-        sb.append("      <nav style=\"display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1.6rem;\">\n");
-        sb.append("        <a href=\"/dashboard.xhtml\" class=\"nav-link\">📊 Dashboard Jakarta Faces</a>\n");
-        sb.append("        <a href=\"/productos.xhtml\" class=\"nav-link\">📦 Catálogo JPA (.xhtml)</a>\n");
-        sb.append("        <a href=\"/usuarios.xhtml\" class=\"nav-link\">👥 Usuarios Security</a>\n");
-        sb.append("      </nav>\n");
-
-        sb.append("      <div class=\"flux-menu-heading\">✨ Área Suite JettraAura</div>\n");
-        sb.append("      <nav style=\"display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1.6rem;\">\n");
-        sb.append("        <a href=\"/aura/demo\" class=\"nav-link\">✨ Portal JettraAura</a>\n");
-        sb.append("        <a href=\"/aura/catalogo\" class=\"nav-link\">📦 Catálogo Dinámico (Aura)</a>\n");
-        sb.append("        <a href=\"/aura/formulario\" class=\"nav-link\">📝 Formulario Reactivo (CPM)</a>\n");
-        sb.append("        <a href=\"/aura/contador\" class=\"nav-link\">⚡ Contador AJAX Parcial</a>\n");
-        sb.append("      </nav>\n");
-
-        sb.append("      <div class=\"flux-menu-heading\">🔌 OpenAPI &amp; Endpoints REST</div>\n");
-        sb.append("      <nav style=\"display: flex; flex-direction: column; gap: 0.25rem;\">\n");
-        sb.append("        <a href=\"/swagger-ui\" target=\"_blank\" class=\"nav-link\">📖 Swagger-UI (OpenAPI)</a>\n");
-        sb.append("        <a href=\"/api/productos\" target=\"_blank\" class=\"nav-link\">/api/productos (JSON)</a>\n");
-        sb.append("        <a href=\"/api/info\" target=\"_blank\" class=\"nav-link\">/api/info (JSON)</a>\n");
-        sb.append("        <a href=\"/metrics\" target=\"_blank\" class=\"nav-link\">/metrics (Métricas JSON)</a>\n");
-        sb.append("        <a href=\"/health\" target=\"_blank\" class=\"nav-link\">/health (Health JSON)</a>\n");
-        sb.append("      </nav>\n");
-        sb.append("    </aside>\n");
-
-        // 3. ÁREA CENTRAL DE CONTENIDO JETTRAFLUX
-        sb.append("    <main class=\"ui-layout-center flux-layout-center\">\n");
-        sb.append("      <div class=\"flux-center-toolbar\">\n");
-        sb.append("        <div>\n");
-        sb.append("          <div style=\"display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;\">\n");
-        sb.append("            <span class=\"flux-pill-badge\">⚡ JETTRAFLUX TEMPLATE</span>\n");
-        sb.append("            <h1 style=\"font-size: 1.45rem; font-weight: 800; color: var(--text-main); margin: 0;\">").append(escapeHtml(title)).append("</h1>\n");
-        sb.append("          </div>\n");
-        sb.append("          <p style=\"color: var(--text-muted); margin: 0.25rem 0 0 0; font-size: 0.85rem;\">Renderizado mediante la plantilla exclusiva de ejemplos JettraFlux en Java 25 puro</p>\n");
-        sb.append("        </div>\n");
-        sb.append("        <div class=\"flux-tabs\">\n");
-        sb.append("          <a href=\"/flux/catalogo\" class=\"tab-pill ").append(isActive("catalogo-flux", "catalogo") ? "active" : "").append("\">🛍️ ").append(escapeHtml(Messages.get("flux.catalog.title"))).append("</a>\n");
-        sb.append("          <a href=\"/flux/metrics\" class=\"tab-pill ").append(isActive("metrics") ? "active" : "").append("\">📊 Métricas</a>\n");
-        sb.append("          <a href=\"/flux/health\" class=\"tab-pill ").append(isActive("health") ? "active" : "").append("\">🩺 Health</a>\n");
-        sb.append("          <a href=\"/flux/storage-monitor\" class=\"tab-pill ").append(isActive("storage-monitor") ? "active" : "").append("\">🚀 Storage</a>\n");
-        sb.append("          <a href=\"/flux/telemetry\" class=\"tab-pill ").append(isActive("telemetry") ? "active" : "").append("\">📈 Telemetría</a>\n");
-        sb.append("          <a href=\"/flux/counter\" class=\"tab-pill ").append(isActive("counter") ? "active" : "").append("\">🎛️ Contador</a>\n");
-        sb.append("        </div>\n");
-        sb.append("      </div>\n");
-
-        sb.append("      <div id=\"jettra-flux-root\" class=\"ui-card flux-content-surface\">\n");
-        sb.append(renderedChild).append("\n");
-        if (extraCenterHtml != null && !extraCenterHtml.isBlank()) {
-            sb.append(extraCenterHtml).append("\n");
-        }
-        sb.append("      </div>\n");
-        sb.append("    </main>\n");
-
-        sb.append("  </div>\n");
-
-        // 4. FOOTER EXCLUSIVO DE JETTRAFLUX
-        sb.append("  <footer class=\"ui-layout-footer flux-layout-footer\">\n");
-        sb.append("    <div>JettraFlux Reactive UI Template • Java 25 &amp; Project Loom Virtual Threads • Cero HTML Manual</div>\n");
-        sb.append("    <div>Estado: <span style=\"color: var(--success); font-weight: bold;\">● OPERATIVO</span> • Modo Persistencia: <strong>[").append(escapeHtml(storageMode)).append("]</strong></div>\n");
-        sb.append("  </footer>\n");
-
-        sb.append("</body>\n");
-        sb.append("</html>\n");
-        return sb.toString();
+        // Contenedor raíz de la plantilla
+        Div pageRoot = Div.of(stylesAndScripts, backdrop, topbar, layoutWrapper, footer);
+        pageRoot.modifier(new Modifier()
+                .cssClass("app-body flux-template-body")
+                .style("margin: 0; display: flex; flex-direction: column; min-height: 100vh; width: 100%;"));
+        return pageRoot;
     }
 
-    public void renderTo(PrintWriter out) {
-        if (out != null) {
-            out.print(renderFullDocument());
+    private Widget buildTopBar() {
+        // Botón hamburguesa
+        Button hamburgerBtn = Button.of(
+                Div.of().modifier(new Modifier().cssClass("hamburger-bar")),
+                Div.of().modifier(new Modifier().cssClass("hamburger-bar")),
+                Div.of().modifier(new Modifier().cssClass("hamburger-bar"))
+        );
+        hamburgerBtn.modifier(new Modifier()
+                .cssClass("hamburger-btn")
+                .attribute("type", "button")
+                .attribute("onclick", "toggleSidebar()")
+                .attribute("aria-label", "Alternar menú JettraFlux")
+                .attribute("title", "Colapsar / Expandir menú JettraFlux"));
+
+        // Insignia de marca JF
+        Div brandBadge = Div.of(Text.of("JF"));
+        brandBadge.modifier(new Modifier().cssClass("flux-brand-badge"));
+
+        // Título del estudio JettraFlux con insignia Java 25
+        Div brandTitle = Div.of(
+                Text.of("JettraFlux Studio").modifier(new Modifier().style("font-weight: 800; font-size: 1.12rem; letter-spacing: -0.02em; color: #ffffff;")),
+                Badge.of("Pure Java 25 Reactive UI").modifier(new Modifier().cssClass("hide-mobile").style("font-size: 0.72rem; font-weight: 700; background: rgba(168, 85, 247, 0.28); border: 1px solid rgba(192, 132, 252, 0.45); color: #f3e8ff; padding: 0.15rem 0.55rem; border-radius: 9999px;"))
+        );
+        brandTitle.modifier(new Modifier().style("display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;"));
+
+        Row leftGroup = Row.of(hamburgerBtn, brandBadge, brandTitle);
+        leftGroup.modifier(new Modifier().style("display: flex; align-items: center; gap: 0.75rem;"));
+
+        // Conmutador de tema Claro / Oscuro
+        Button themeBtn = Button.of(
+                RawHtml.of("<span id=\"themeIcon\">🌙</span> <span id=\"themeLabel\" class=\"hide-mobile\">Oscuro</span>")
+        );
+        themeBtn.id("btnThemeToggle");
+        themeBtn.modifier(new Modifier()
+                .cssClass("theme-toggle-btn")
+                .attribute("type", "button")
+                .attribute("onclick", "toggleTheme()")
+                .attribute("title", "Alternar Tema Claro / Oscuro"));
+
+        // Indicador de modo de almacenamiento activo
+        Div storageBadge = Div.of(RawHtml.of("Modo: <strong style=\"color:#38bdf8;\">" + escapeHtml(storageMode) + "</strong>"));
+        storageBadge.modifier(new Modifier()
+                .cssClass("hide-mobile")
+                .style("background: rgba(15, 23, 42, 0.45); border: 1px solid rgba(148, 163, 184, 0.25); color: #e2e8f0; font-size: 0.8rem; padding: 0.3rem 0.65rem; border-radius: 6px;"));
+
+        // Usuario autenticado
+        Div userInfo = Div.of(Text.of("👤 " + (user != null ? escapeHtml(user.getFullName()) : "Administrador Principal")));
+        userInfo.modifier(new Modifier()
+                .cssClass("hide-mobile")
+                .style("font-size: 0.85rem; color: #f1f5f9;"));
+
+        // Enlace de cierre de sesión
+        Link logoutLink = Link.of("/logout", "Cerrar Sesión");
+        logoutLink.modifier(new Modifier()
+                .cssClass("app-btn-danger")
+                .style("text-decoration: none; font-size: 0.8rem; padding: 0.35rem 0.75rem; color: #ffffff; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center;"));
+
+        Row rightGroup = Row.of(themeBtn, storageBadge, userInfo, logoutLink);
+        rightGroup.modifier(new Modifier().cssClass("top-right-group"));
+
+        Div topbar = Div.of(leftGroup, rightGroup);
+        topbar.modifier(new Modifier().cssClass("ui-layout-top flux-layout-top"));
+        return topbar;
+    }
+
+    private Widget buildLayoutWrapper() {
+        Widget sidebar = buildSidebar();
+        Widget center = buildCenter();
+
+        Div layoutWrapper = Div.of(sidebar, center);
+        layoutWrapper.modifier(new Modifier().cssClass("ui-layout-wrapper flux-layout-wrapper"));
+        return layoutWrapper;
+    }
+
+    private Widget buildSidebar() {
+        // Banner introductorio
+        Div banner = Div.of(
+                Div.of(Text.of("⚡ Motor JettraFlux")).modifier(new Modifier().style("font-weight: 800; font-size: 0.88rem; color: #c084fc; display: flex; align-items: center; gap: 0.4rem;")),
+                Div.of(Text.of("Plantilla exclusiva para vistas reactivas en Java 25 puro")).modifier(new Modifier().style("font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;"))
+        );
+        banner.modifier(new Modifier().cssClass("flux-sidebar-banner"));
+
+        // Grupo 1: Suite Ejemplos JettraFlux
+        Widget headingFlux = Div.of(Text.of("⚡ Suite Ejemplos JettraFlux")).modifier(new Modifier().cssClass("flux-menu-heading"));
+        Div navFlux = Div.of(
+                createNavLink("/flux/catalogo", "🛍️ Catálogo Reactivo (Flux)", isActive("catalogo-flux", "catalogo")),
+                createNavLink("/flux/metrics", "📊 Métricas del Servidor", isActive("metrics")),
+                createNavLink("/flux/health", "🩺 Estado de Salud (Health)", isActive("health")),
+                createNavLink("/flux/storage-monitor", "🚀 Monitor Almacenamiento", isActive("storage-monitor")),
+                createNavLink("/flux/telemetry", "📈 Telemetría en Tiempo Real", isActive("telemetry")),
+                createNavLink("/flux/counter", "🎛️ Contador Reactivo", isActive("counter"))
+        );
+        navFlux.modifier(new Modifier().style("display: flex; flex-direction: column; gap: 0.28rem; margin-bottom: 1.6rem;"));
+
+        // Grupo 2: Área Jakarta Faces
+        Widget headingFaces = Div.of(Text.of("🖥️ Área Jakarta Faces (.xhtml)")).modifier(new Modifier().cssClass("flux-menu-heading"));
+        Div navFaces = Div.of(
+                createNavLink("/dashboard.xhtml", "📊 Dashboard Jakarta Faces", false),
+                createNavLink("/productos.xhtml", "📦 Catálogo JPA (.xhtml)", false),
+                createNavLink("/usuarios.xhtml", "👥 Usuarios Security", false)
+        );
+        navFaces.modifier(new Modifier().style("display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1.6rem;"));
+
+        // Grupo 3: Área Suite JettraAura
+        Widget headingAura = Div.of(Text.of("✨ Área Suite JettraAura")).modifier(new Modifier().cssClass("flux-menu-heading"));
+        Div navAura = Div.of(
+                createNavLink("/aura/demo", "✨ Portal JettraAura", false),
+                createNavLink("/aura/catalogo", "📦 Catálogo Dinámico (Aura)", false),
+                createNavLink("/aura/formulario", "📝 Formulario Reactivo (CPM)", false),
+                createNavLink("/aura/contador", "⚡ Contador AJAX Parcial", false)
+        );
+        navAura.modifier(new Modifier().style("display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1.6rem;"));
+
+        // Grupo 4: OpenAPI & Endpoints REST
+        Widget headingApi = Div.of(Text.of("🔌 OpenAPI & Endpoints REST")).modifier(new Modifier().cssClass("flux-menu-heading"));
+        Div navApi = Div.of(
+                createExternalNavLink("/swagger-ui", "📖 Swagger-UI (OpenAPI)"),
+                createExternalNavLink("/api/productos", "/api/productos (JSON)"),
+                createExternalNavLink("/api/info", "/api/info (JSON)"),
+                createExternalNavLink("/metrics", "/metrics (Métricas JSON)"),
+                createExternalNavLink("/health", "/health (Health JSON)")
+        );
+        navApi.modifier(new Modifier().style("display: flex; flex-direction: column; gap: 0.25rem;"));
+
+        Div sidebar = Div.of(banner, headingFlux, navFlux, headingFaces, navFaces, headingAura, navAura, headingApi, navApi);
+        sidebar.id("appSidebar");
+        sidebar.modifier(new Modifier().cssClass("ui-layout-left flux-layout-left"));
+        return sidebar;
+    }
+
+    private Widget buildCenter() {
+        // Cabecera de la barra de herramientas central
+        Badge pillBadge = Badge.of("⚡ JETTRAFLUX TEMPLATE");
+        pillBadge.modifier(new Modifier().cssClass("flux-pill-badge"));
+
+        Header titleHeader = Header.of(1, title);
+        titleHeader.modifier(new Modifier().style("font-size: 1.45rem; font-weight: 800; color: var(--text-main); margin: 0;"));
+
+        Div titleRow = Div.of(pillBadge, titleHeader);
+        titleRow.modifier(new Modifier().style("display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;"));
+
+        Paragraph subtitle = Paragraph.of("Renderizado mediante la plantilla exclusiva de ejemplos JettraFlux en Java 25 puro");
+        subtitle.modifier(new Modifier().style("color: var(--text-muted); margin: 0.25rem 0 0 0; font-size: 0.85rem;"));
+
+        Div toolbarLeft = Div.of(titleRow, subtitle);
+
+        // Barra de pestañas superiores del catálogo flux
+        Div tabs = Div.of(
+                createTabLink("/flux/catalogo", "🛍️ " + Messages.get("flux.catalog.title"), isActive("catalogo-flux", "catalogo")),
+                createTabLink("/flux/metrics", "📊 Métricas", isActive("metrics")),
+                createTabLink("/flux/health", "🩺 Health", isActive("health")),
+                createTabLink("/flux/storage-monitor", "🚀 Storage", isActive("storage-monitor")),
+                createTabLink("/flux/telemetry", "📈 Telemetría", isActive("telemetry")),
+                createTabLink("/flux/counter", "🎛️ Contador", isActive("counter"))
+        );
+        tabs.modifier(new Modifier().cssClass("flux-tabs"));
+
+        Div toolbar = Div.of(toolbarLeft, tabs);
+        toolbar.modifier(new Modifier().cssClass("flux-center-toolbar"));
+
+        // Superficie de contenido que encapsula el widget hijo y el HTML complementario
+        Widget innerContent;
+        if (contentWidget != null && extraCenterHtml != null && !extraCenterHtml.isBlank()) {
+            innerContent = Div.of(contentWidget, RawHtml.of(extraCenterHtml));
+        } else if (contentWidget != null) {
+            innerContent = contentWidget;
+        } else if (extraCenterHtml != null && !extraCenterHtml.isBlank()) {
+            innerContent = RawHtml.of(extraCenterHtml);
+        } else {
+            innerContent = Div.of();
         }
+
+        Div contentSurface = Div.of(innerContent);
+        contentSurface.id("fluxContentSurface");
+        contentSurface.modifier(new Modifier().cssClass("ui-card flux-content-surface"));
+
+        Div center = Div.of(toolbar, contentSurface);
+        center.modifier(new Modifier().cssClass("ui-layout-center flux-layout-center"));
+        return center;
+    }
+
+    private Widget buildFooter() {
+        Div footerLeft = Div.of(Text.of("JettraFlux Reactive UI Template • Java 25 & Project Loom Virtual Threads • Cero HTML Manual"));
+        Div footerRight = Div.of(RawHtml.of("Estado: <span style=\"color: var(--success); font-weight: bold;\">● OPERATIVO</span> • Modo Persistencia: <strong>[" + escapeHtml(storageMode) + "]</strong>"));
+
+        Div footer = Div.of(footerLeft, footerRight);
+        footer.modifier(new Modifier().cssClass("ui-layout-footer flux-layout-footer"));
+        return footer;
+    }
+
+    private Link createNavLink(String href, String label, boolean active) {
+        Link link = Link.of(href, label);
+        String classes = active ? "nav-link active" : "nav-link";
+        link.modifier(new Modifier().cssClass(classes));
+        return link;
+    }
+
+    private Link createExternalNavLink(String href, String label) {
+        Link link = Link.of(href, label);
+        link.target("_blank");
+        link.modifier(new Modifier().cssClass("nav-link"));
+        return link;
+    }
+
+    private Link createTabLink(String href, String label, boolean active) {
+        Link link = Link.of(href, label);
+        String classes = active ? "tab-pill active" : "tab-pill";
+        link.modifier(new Modifier().cssClass(classes));
+        return link;
     }
 
     private boolean isActive(String... keys) {
@@ -199,6 +323,16 @@ public class FluxTemplateView extends FluxView {
             }
         }
         return false;
+    }
+
+    public String renderFullDocument() {
+        return new FluxRenderer().render(this, title + " - JettraFlux Template");
+    }
+
+    public void renderTo(PrintWriter out) {
+        if (out != null) {
+            out.print(renderFullDocument());
+        }
     }
 
     private static String getFluxTemplateStylesAndScripts() {
@@ -253,11 +387,17 @@ public class FluxTemplateView extends FluxView {
 
             * { box-sizing: border-box; }
 
-            body.flux-template-body {
+            body.flux-template-body, .flux-template-body {
               font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-              background-color: var(--bg-body);
-              color: var(--text-main);
+              background-color: var(--bg-body) !important;
+              color: var(--text-main) !important;
               transition: background-color 0.2s ease, color 0.2s ease;
+            }
+
+            #jettra-flux-root {
+              min-height: 100vh;
+              display: flex;
+              flex-direction: column;
             }
 
             .flux-layout-top {
@@ -296,38 +436,39 @@ public class FluxTemplateView extends FluxView {
             }
 
             .hamburger-btn {
-              display: inline-flex;
-              flex-direction: column;
-              justify-content: space-around;
-              width: 36px;
-              height: 36px;
-              background: rgba(255, 255, 255, 0.12);
-              border: 1px solid rgba(255, 255, 255, 0.25);
-              border-radius: 8px;
-              cursor: pointer;
-              padding: 8px;
-              transition: background 0.2s;
+              display: inline-flex !important;
+              flex-direction: column !important;
+              justify-content: space-around !important;
+              width: 36px !important;
+              height: 36px !important;
+              background: rgba(255, 255, 255, 0.12) !important;
+              border: 1px solid rgba(255, 255, 255, 0.25) !important;
+              border-radius: 8px !important;
+              cursor: pointer !important;
+              padding: 8px !important;
+              transition: background 0.2s !important;
             }
-            .hamburger-btn:hover { background: rgba(255, 255, 255, 0.22); }
+            .hamburger-btn:hover { background: rgba(255, 255, 255, 0.22) !important; }
             .hamburger-bar {
               width: 100%;
               height: 2px;
               background-color: #ffffff;
               border-radius: 2px;
+              display: block;
             }
 
             .theme-toggle-btn {
-              background: rgba(255, 255, 255, 0.14);
-              color: #ffffff;
-              border: 1px solid rgba(255, 255, 255, 0.28);
-              padding: 0.35rem 0.75rem;
-              border-radius: 9999px;
-              cursor: pointer;
-              font-size: 0.8rem;
-              font-weight: 600;
-              display: inline-flex;
-              align-items: center;
-              gap: 0.35rem;
+              background: rgba(255, 255, 255, 0.14) !important;
+              color: #ffffff !important;
+              border: 1px solid rgba(255, 255, 255, 0.28) !important;
+              padding: 0.35rem 0.75rem !important;
+              border-radius: 9999px !important;
+              cursor: pointer !important;
+              font-size: 0.8rem !important;
+              font-weight: 600 !important;
+              display: inline-flex !important;
+              align-items: center !important;
+              gap: 0.35rem !important;
             }
 
             .flux-layout-wrapper {
@@ -581,6 +722,9 @@ public class FluxTemplateView extends FluxView {
             (function() {
               const savedTheme = localStorage.getItem('jettra-theme') || 'dark';
               document.documentElement.setAttribute('data-theme', savedTheme);
+              if (document.body) {
+                document.body.classList.add('flux-template-body', 'app-body');
+              }
             })();
 
             function updateThemeButtonUI(theme) {
@@ -609,6 +753,9 @@ public class FluxTemplateView extends FluxView {
             }
 
             window.addEventListener('DOMContentLoaded', function() {
+              if (document.body) {
+                document.body.classList.add('flux-template-body', 'app-body');
+              }
               updateThemeButtonUI(document.documentElement.getAttribute('data-theme') || 'dark');
               if (window.innerWidth > 900 && localStorage.getItem('jettra_sidebar_collapsed') === 'true') {
                 document.body.classList.add('sidebar-collapsed');
@@ -626,4 +773,3 @@ public class FluxTemplateView extends FluxView {
                 .replace("\"", "&quot;");
     }
 }
-
