@@ -31,9 +31,12 @@ public class App {
             try { config.setPort(Integer.parseInt(portProp.trim())); } catch (Exception ignored) {}
         }
 
-        String storageProp = System.getProperty("jettra.storage.mode", System.getenv("JETTRA_STORAGE_MODE"));
+        String storageProp = System.getProperty("storage.mode");
+        if (storageProp == null || storageProp.isBlank()) storageProp = System.getProperty("jettra.storage.mode");
+        if (storageProp == null || storageProp.isBlank()) storageProp = System.getenv("STORAGE_MODE");
+        if (storageProp == null || storageProp.isBlank()) storageProp = System.getenv("JETTRA_STORAGE_MODE");
         if (storageProp != null && !storageProp.isBlank()) {
-            try { config.setStorageMode(StorageMode.valueOf(storageProp.trim().toUpperCase())); } catch (Exception ignored) {}
+            config.setStorageMode(StorageMode.fromString(storageProp.trim()));
         }
 
         JettraServer server = startApplication(config);

@@ -325,5 +325,25 @@ public class JettraServerExampleTest {
             server.stop();
         }
     }
+
+    @Test
+    @DisplayName("10. Verificar configuración de StorageMode (OFF_HEAP, DISK_MEMORY, JVM_RAM) y visualización en el Top Bar")
+    public void testStorageModeConfigurationAndTopBarDisplay() throws Exception {
+        JettraServer server = App.startApplication(TEST_PORT + 9, StorageMode.OFF_HEAP);
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + (TEST_PORT + 9) + "/dashboard.xhtml"))
+                .GET()
+                .build();
+            HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, res.statusCode(), "Debe responder 200");
+            String html = res.body();
+            JettraAssert.assertTrue(html.contains("Modo: <strong style=\"color:#38bdf8;\">OFF_HEAP</strong>"),
+                "El top bar debe mostrar el modo de almacenamiento configurado (OFF_HEAP)");
+        } finally {
+            server.stop();
+        }
+    }
 }
 

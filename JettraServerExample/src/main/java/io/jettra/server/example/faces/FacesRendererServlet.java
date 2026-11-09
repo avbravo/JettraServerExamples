@@ -202,7 +202,8 @@ public class FacesRendererServlet extends HttpServlet {
         final User user = sessionUser != null ? sessionUser : new User("admin", "admin123", "Administrador Principal", "ADMIN", "admin@jettra.io");
 
         DashboardBean dbBean = new DashboardBean();
-        dbBean.refreshMetrics(null);
+        StorageMetrics sm = (server != null && server.storage() != null) ? server.storage().getMetrics() : null;
+        dbBean.refreshMetrics(sm);
 
         res.setContentType("text/html; charset=UTF-8");
         PrintWriter out = res.getWriter();
@@ -683,10 +684,16 @@ public class FacesRendererServlet extends HttpServlet {
     }
 
     private String getEffectiveStorageMode() {
-        if (server != null && server.getConfig() != null) {
+        if (server != null && server.storage() != null && server.storage().getMode() != null) {
+            return server.storage().getMode().name();
+        }
+        if (server != null && server.getConfig() != null && server.getConfig().getStorageMode() != null) {
             return server.getConfig().getStorageMode().name();
         }
-        return System.getProperty("jettra.storage.mode", "JVM_RAM");
+        String p = System.getProperty("storage.mode");
+        if (p == null || p.isBlank()) p = System.getProperty("jettra.storage.mode");
+        if (p != null && !p.isBlank()) return io.jettra.server.core.storage.StorageMode.fromString(p).name();
+        return "JVM_RAM";
     }
 
     private static String commonHeadStylesAndScripts() {
