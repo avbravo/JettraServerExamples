@@ -5,7 +5,9 @@ import io.jettra.server.core.config.ServerConfig;
 import io.jettra.server.core.storage.StorageMode;
 import io.jettra.server.example.faces.FacesRendererServlet;
 import io.jettra.server.example.flux.CatalogoFlux;
+import io.jettra.server.example.flux.HealthFluxView;
 import io.jettra.server.example.flux.InteractiveCounterFluxView;
+import io.jettra.server.example.flux.MetricsFluxView;
 import io.jettra.server.example.flux.StorageMonitorFluxView;
 import io.jettra.server.example.flux.TelemetryFluxView;
 import io.jettra.server.example.rest.ProductResource;
@@ -87,6 +89,8 @@ public class App {
         jakarta.getServletBridge().registerServlet("/flux/counter", facesServlet);
         jakarta.getServletBridge().registerServlet("/flux/catalogo", facesServlet);
         jakarta.getServletBridge().registerServlet("/flux/catalogo-flux", facesServlet);
+        jakarta.getServletBridge().registerServlet("/flux/metrics", facesServlet);
+        jakarta.getServletBridge().registerServlet("/flux/health", facesServlet);
         jakarta.getServletBridge().registerServlet("/logout", facesServlet);
 
         // 4. Registrar Recursos RESTful (JAX-RS)
@@ -101,6 +105,8 @@ public class App {
         flux.page("/flux/telemetry", "JettraFlux - Telemetría del Servidor", TelemetryFluxView.class);
         flux.page("/flux/counter", "JettraFlux - Contador Reactivo", InteractiveCounterFluxView.class);
         flux.page("/flux/catalogo", "JettraFlux - Catálogo de Productos", () -> new CatalogoFlux(productService));
+        flux.page("/flux/metrics", "JettraFlux - Métricas del Servidor", () -> new MetricsFluxView(server));
+        flux.page("/flux/health", "JettraFlux - Estado de Salud (Health)", () -> new HealthFluxView(server));
 
         // 6. Registrar Swagger-UI con Acreditación de Seguridad usando JettraFlux
         flux.swagger("/swagger-ui", "JettraServerExample - Catálogo & Microservicios API", java.util.List.of(
@@ -133,6 +139,9 @@ public class App {
         System.out.println(" -> Vistas JettraFlux    : http://localhost:" + port + "/flux/storage-monitor");
         System.out.println("                         : http://localhost:" + port + "/flux/telemetry");
         System.out.println("                         : http://localhost:" + port + "/flux/counter");
+        System.out.println("                         : http://localhost:" + port + "/flux/catalogo");
+        System.out.println("                         : http://localhost:" + port + "/flux/metrics");
+        System.out.println("                         : http://localhost:" + port + "/flux/health");
         System.out.println(" -> Endpoints REST       : http://localhost:" + port + "/api/productos");
         System.out.println("                         : http://localhost:" + port + "/api/info");
         System.out.println("==================================================================================");

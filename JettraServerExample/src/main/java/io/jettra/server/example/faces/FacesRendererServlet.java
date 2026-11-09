@@ -5,6 +5,8 @@ import io.jettra.server.core.storage.StorageMetrics;
 import io.jettra.server.example.bean.DashboardBean;
 import io.jettra.server.example.bean.LoginBean;
 import io.jettra.server.example.flux.CatalogoFlux;
+import io.jettra.server.example.flux.HealthFluxView;
+import io.jettra.server.example.flux.MetricsFluxView;
 import io.jettra.server.example.model.Product;
 import io.jettra.server.example.model.User;
 import io.jettra.server.example.service.ProductService;
@@ -66,6 +68,10 @@ public class FacesRendererServlet extends HttpServlet {
             renderDashboardWithFlux(req, res, "counter");
         } else if (uri.endsWith("/flux/catalogo") || uri.endsWith("/flux/catalogo-flux")) {
             renderDashboardWithFlux(req, res, "catalogo-flux");
+        } else if (uri.endsWith("/flux/metrics")) {
+            renderDashboardWithFlux(req, res, "metrics");
+        } else if (uri.endsWith("/flux/health")) {
+            renderDashboardWithFlux(req, res, "health");
         } else if (uri.endsWith("/dashboard.xhtml") || uri.equals("/") || uri.equals("/dashboard")) {
             String view = req.getParameter("view");
             if (view != null && !view.isBlank()) {
@@ -212,6 +218,8 @@ public class FacesRendererServlet extends HttpServlet {
             out.println("        <div class=\"flux-tabs\">");
             out.println("          <a href=\"/dashboard.xhtml\" class=\"tab-pill active\">📊 General</a>");
             out.println("          <a href=\"/flux/catalogo\" class=\"tab-pill\">🛍️ " + escapeHtml(Messages.get("flux.catalog.title")) + "</a>");
+            out.println("          <a href=\"/dashboard.xhtml?view=metrics\" class=\"tab-pill\">📊 Métricas Flux</a>");
+            out.println("          <a href=\"/dashboard.xhtml?view=health\" class=\"tab-pill\">🩺 Health Flux</a>");
             out.println("          <a href=\"/dashboard.xhtml?view=storage-monitor\" class=\"tab-pill\">🚀 Storage Flux</a>");
             out.println("          <a href=\"/dashboard.xhtml?view=telemetry\" class=\"tab-pill\">📈 Telemetría Flux</a>");
             out.println("          <a href=\"/dashboard.xhtml?view=counter\" class=\"tab-pill\">🎛️ Contador Flux</a>");
@@ -251,7 +259,7 @@ public class FacesRendererServlet extends HttpServlet {
             out.println("      <div class=\"ui-panel\" style=\"background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-subtle); margin-bottom: 2rem; box-shadow: var(--shadow-sm);\">");
             out.println("        <div style=\"display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;\">");
             out.println("          <div>");
-            out.println("            <h3 style=\"margin: 0; font-size: 1.2rem; color: var(--text-main);\">⚡ Componente JettraFlux Embebido en Sección Center</h3>");
+            out.println("            <h3 style=\"margin: 0; font-size: 1.2rem; color: var(--text-main);\">⚡ Componentes JettraFlux Embebidos en Sección Center</h3>");
             out.println("            <p style=\"margin: 0.25rem 0 0; color: var(--text-muted); font-size: 0.875rem;\">Renderizado de UI Reactiva en Java puro con comunicación cliente-servidor inmediata</p>");
             out.println("          </div>");
             out.println("          <span style=\"background: var(--primary-light); color: var(--primary); padding: 0.35rem 0.85rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;\">Java 25 Reactive</span>");
@@ -263,6 +271,21 @@ public class FacesRendererServlet extends HttpServlet {
             out.println("          <a href=\"/flux/catalogo\" class=\"flux-card-link\">");
             out.println("            <div style=\"font-weight: 700; color: #0284c7; margin-bottom: 0.35rem;\">🛍️ " + escapeHtml(Messages.get("flux.catalog.title")) + "</div>");
             out.println("            <div style=\"font-size: 0.85rem; color: var(--text-muted);\">" + escapeHtml(Messages.get("flux.catalog.subtitle")) + "</div>");
+            out.println("          </a>");
+
+            out.println("          <a href=\"/dashboard.xhtml?view=metrics\" class=\"flux-card-link\">");
+            out.println("            <div style=\"font-weight: 700; color: #2563eb; margin-bottom: 0.35rem;\">📊 Métricas del Servidor (Flux)</div>");
+            out.println("            <div style=\"font-size: 0.85rem; color: var(--text-muted);\">Visualización reactiva de memoria JVM, Virtual Threads Loom y rendimiento Storage.</div>");
+            out.println("          </a>");
+
+            out.println("          <a href=\"/dashboard.xhtml?view=health\" class=\"flux-card-link\">");
+            out.println("            <div style=\"font-weight: 700; color: #059669; margin-bottom: 0.35rem;\">🩺 Estado de Salud (Flux)</div>");
+            out.println("            <div style=\"font-size: 0.85rem; color: var(--text-muted);\">Auditoría reactiva de sondas Liveness y Readiness según MicroProfile Health.</div>");
+            out.println("          </a>");
+
+            out.println("          <a href=\"/swagger-ui\" target=\"_blank\" class=\"flux-card-link\">");
+            out.println("            <div style=\"font-weight: 700; color: #8b5cf6; margin-bottom: 0.35rem;\">📖 Swagger-UI (OpenAPI)</div>");
+            out.println("            <div style=\"font-size: 0.85rem; color: var(--text-muted);\">Explorador interactivo de microservicios REST con acreditación de tokens JWT.</div>");
             out.println("          </a>");
 
             out.println("          <a href=\"/dashboard.xhtml?view=storage-monitor\" class=\"flux-card-link\">");
@@ -295,6 +318,8 @@ public class FacesRendererServlet extends HttpServlet {
 
         String activeStorage = getEffectiveStorageMode();
         String title = switch (viewName) {
+            case "metrics" -> "Métricas del Servidor - JettraFlux";
+            case "health" -> "Estado de Salud (Health) - JettraFlux";
             case "storage-monitor" -> "Monitor de Almacenamiento - JettraFlux";
             case "telemetry" -> "Telemetría del Servidor - JettraFlux";
             case "counter" -> "Contador Reactivo - JettraFlux";
@@ -315,6 +340,8 @@ public class FacesRendererServlet extends HttpServlet {
             out.println("        <div class=\"flux-tabs\">");
             out.println("          <a href=\"/dashboard.xhtml\" class=\"tab-pill\">📊 General</a>");
             out.println("          <a href=\"/flux/catalogo\" class=\"tab-pill " + (("catalogo-flux".equals(viewName) || "catalogo".equals(viewName)) ? "active" : "") + "\">🛍️ Catálogo Flux</a>");
+            out.println("          <a href=\"/dashboard.xhtml?view=metrics\" class=\"tab-pill " + ("metrics".equals(viewName) ? "active" : "") + "\">📊 Métricas</a>");
+            out.println("          <a href=\"/dashboard.xhtml?view=health\" class=\"tab-pill " + ("health".equals(viewName) ? "active" : "") + "\">🩺 Health</a>");
             out.println("          <a href=\"/dashboard.xhtml?view=storage-monitor\" class=\"tab-pill " + ("storage-monitor".equals(viewName) ? "active" : "") + "\">🚀 Storage</a>");
             out.println("          <a href=\"/dashboard.xhtml?view=telemetry\" class=\"tab-pill " + ("telemetry".equals(viewName) ? "active" : "") + "\">📈 Telemetría</a>");
             out.println("          <a href=\"/dashboard.xhtml?view=counter\" class=\"tab-pill " + ("counter".equals(viewName) ? "active" : "") + "\">🎛️ Contador</a>");
@@ -326,6 +353,10 @@ public class FacesRendererServlet extends HttpServlet {
 
             if ("catalogo-flux".equals(viewName) || "catalogo".equals(viewName)) {
                 new CatalogoFlux(productService).renderSectionHtml(out);
+            } else if ("metrics".equals(viewName)) {
+                new MetricsFluxView(server).renderSectionHtml(out);
+            } else if ("health".equals(viewName)) {
+                new HealthFluxView(server).renderSectionHtml(out);
             } else if ("storage-monitor".equals(viewName)) {
                 renderFluxStorageMonitor(out, activeStorage);
             } else if ("telemetry".equals(viewName)) {
@@ -581,12 +612,16 @@ public class FacesRendererServlet extends HttpServlet {
         out.println("  <!-- TOP: Header y Barra Superior Responsiva -->");
         out.println("  <header class=\"ui-layout-top\">");
         out.println("    <div style=\"display: flex; align-items: center; gap: 0.75rem;\">");
-        out.println("      <button class=\"mobile-toggle-btn\" type=\"button\" onclick=\"toggleSidebar()\" title=\"Menú\">☰</button>");
+        out.println("      <button class=\"hamburger-btn\" type=\"button\" onclick=\"toggleSidebar()\" aria-label=\"Alternar menú lateral\" title=\"Colapsar / Expandir menú\">");
+        out.println("        <span class=\"hamburger-bar\"></span>");
+        out.println("        <span class=\"hamburger-bar\"></span>");
+        out.println("        <span class=\"hamburger-bar\"></span>");
+        out.println("      </button>");
         out.println("      <div style=\"background: var(--primary); color: white; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold;\">JS</div>");
         out.println("      <span style=\"font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; color: white;\">JettraServer <span class=\"hide-mobile\" style=\"font-size: 0.75rem; font-weight: normal; background: rgba(255,255,255,0.15); padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.25rem;\">Jakarta EE 11</span></span>");
         out.println("    </div>");
         out.println("    <div class=\"top-right-group\">");
-        out.println("      <button onclick=\"toggleTheme()\" class=\"theme-toggle-btn\" type=\"button\" title=\"Alternar Tema Claro / Oscuro\">");
+        out.println("      <button onclick=\"toggleTheme()\" class=\"theme-toggle-btn\" type=\"button\" title=\"Alternar Tema Claro / Oscuro\" id=\"btnThemeToggle\">");
         out.println("        <span id=\"themeIcon\">🌙</span> <span id=\"themeLabel\" class=\"hide-mobile\">Oscuro</span>");
         out.println("      </button>");
         out.println("      <span class=\"hide-mobile\" style=\"background: rgba(255,255,255,0.1); color: #cbd5e1; font-size: 0.8rem; padding: 0.3rem 0.6rem; border-radius: 6px;\">Modo: <strong style=\"color:#38bdf8;\">" + storageMode + "</strong></span>");
@@ -611,16 +646,20 @@ public class FacesRendererServlet extends HttpServlet {
         out.println("      <div style=\"font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-light); margin-bottom: 0.75rem; letter-spacing: 0.05em;\">⚡ Vistas JettraFlux (Java Puro)</div>");
         out.println("      <nav style=\"display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1.75rem;\">");
         out.println("        <a href=\"/flux/catalogo\" class=\"nav-link " + (("catalogo-flux".equals(activeSection) || "catalogo".equals(activeSection)) ? "active" : "") + "\">🛍️ Catálogo Reactivo (Flux)</a>");
+        out.println("        <a href=\"/dashboard.xhtml?view=metrics\" class=\"nav-link " + ("metrics".equals(activeSection) ? "active" : "") + "\">📊 Métricas del Servidor (Flux)</a>");
+        out.println("        <a href=\"/dashboard.xhtml?view=health\" class=\"nav-link " + ("health".equals(activeSection) ? "active" : "") + "\">🩺 Estado de Salud (Flux)</a>");
         out.println("        <a href=\"/flux/storage-monitor\" class=\"nav-link " + ("storage-monitor".equals(activeSection) ? "active" : "") + "\">🚀 Monitor Almacenamiento</a>");
         out.println("        <a href=\"/flux/telemetry\" class=\"nav-link " + ("telemetry".equals(activeSection) ? "active" : "") + "\">📈 Telemetría de Red</a>");
         out.println("        <a href=\"/flux/counter\" class=\"nav-link " + ("counter".equals(activeSection) ? "active" : "") + "\">🎛️ Contador Reactivo</a>");
         out.println("      </nav>");
 
-        out.println("      <div style=\"font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-light); margin-bottom: 0.75rem; letter-spacing: 0.05em;\">🔌 Servicios RESTful</div>");
+        out.println("      <div style=\"font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-light); margin-bottom: 0.75rem; letter-spacing: 0.05em;\">🔌 Servicios RESTful &amp; Docs</div>");
         out.println("      <nav style=\"display: flex; flex-direction: column; gap: 0.25rem;\">");
+        out.println("        <a href=\"/swagger-ui\" target=\"_blank\" class=\"nav-link\">📖 Swagger-UI (OpenAPI)</a>");
         out.println("        <a href=\"/api/productos\" target=\"_blank\" class=\"nav-link\">/api/productos (JSON)</a>");
         out.println("        <a href=\"/api/info\" target=\"_blank\" class=\"nav-link\">/api/info (JSON)</a>");
-        out.println("        <a href=\"/metrics\" target=\"_blank\" class=\"nav-link\">/metrics (Métricas)</a>");
+        out.println("        <a href=\"/metrics\" target=\"_blank\" class=\"nav-link\">/metrics (Métricas JSON)</a>");
+        out.println("        <a href=\"/health\" target=\"_blank\" class=\"nav-link\">/health (Health JSON)</a>");
         out.println("      </nav>");
         out.println("    </aside>");
 
@@ -732,13 +771,52 @@ public class FacesRendererServlet extends HttpServlet {
               min-height: calc(100vh - 100px);
             }
 
+            .hamburger-btn {
+              display: inline-flex;
+              flex-direction: column;
+              justify-content: space-around;
+              width: 34px;
+              height: 34px;
+              background: rgba(255, 255, 255, 0.12);
+              border: 1px solid rgba(255, 255, 255, 0.25);
+              border-radius: 6px;
+              cursor: pointer;
+              padding: 7px;
+              transition: background 0.2s, transform 0.2s;
+              box-sizing: border-box;
+            }
+            .hamburger-btn:hover {
+              background: rgba(255, 255, 255, 0.25);
+              transform: scale(1.05);
+            }
+            .hamburger-bar {
+              width: 100%;
+              height: 2px;
+              background-color: #ffffff;
+              border-radius: 2px;
+              transition: all 0.25s ease-in-out;
+            }
+
             .ui-layout-left {
               width: 260px;
               background: var(--bg-sidebar);
               border-right: 1px solid var(--border-subtle);
               padding: 1.5rem 1rem;
               box-sizing: border-box;
-              transition: transform 0.3s ease, background 0.25s ease;
+              transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                          transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                          opacity 0.25s ease,
+                          background 0.25s ease;
+              flex-shrink: 0;
+            }
+
+            /* Escritorio (>900px): Colapsar y expandir sidebar ocupando el 100% de la pantalla */
+            @media (min-width: 901px) {
+              body.sidebar-collapsed .ui-layout-left {
+                margin-left: -260px;
+                opacity: 0;
+                pointer-events: none;
+              }
             }
 
             .ui-layout-center {
@@ -984,31 +1062,39 @@ public class FacesRendererServlet extends HttpServlet {
 
             /* BREAKPOINTS RESPONSIVOS */
             @media (max-width: 900px) {
-              .mobile-toggle-btn {
-                display: block;
-              }
               .ui-layout-left {
                 position: fixed;
                 top: 60px;
                 left: 0;
                 bottom: 0;
                 width: 270px;
-                z-index: 999;
+                z-index: 1000;
                 transform: translateX(-100%);
-                box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+                box-shadow: 6px 0 25px rgba(0,0,0,0.3);
+                margin-left: 0 !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                max-width: 82vw;
+                overflow-y: auto;
               }
+              body.mobile-sidebar-open .ui-layout-left,
               .ui-layout-left.open {
                 transform: translateX(0);
               }
-              .sidebar-backdrop.active {
-                display: block;
+              .sidebar-backdrop {
+                display: none;
                 position: fixed;
                 top: 60px;
                 left: 0;
                 right: 0;
                 bottom: 0;
                 background: rgba(0,0,0,0.5);
-                z-index: 998;
+                z-index: 999;
+                backdrop-filter: blur(2px);
+              }
+              body.mobile-sidebar-open .sidebar-backdrop,
+              .sidebar-backdrop.active {
+                display: block;
               }
               .ui-layout-center {
                 padding: 1.25rem;
@@ -1060,18 +1146,42 @@ public class FacesRendererServlet extends HttpServlet {
             }
 
             function toggleSidebar() {
+              const isMobile = window.innerWidth <= 900;
+              if (isMobile) {
+                const open = document.body.classList.toggle('mobile-sidebar-open');
+                const sidebar = document.getElementById('appSidebar');
+                const backdrop = document.getElementById('sidebarBackdrop');
+                if (sidebar) sidebar.classList.toggle('open', open);
+                if (backdrop) backdrop.classList.toggle('active', open);
+              } else {
+                const collapsed = document.body.classList.toggle('sidebar-collapsed');
+                localStorage.setItem('jettra_sidebar_collapsed', collapsed ? 'true' : 'false');
+              }
+            }
+
+            function closeMobileSidebar() {
+              document.body.classList.remove('mobile-sidebar-open');
               const sidebar = document.getElementById('appSidebar');
               const backdrop = document.getElementById('sidebarBackdrop');
-              if (sidebar && backdrop) {
-                sidebar.classList.toggle('open');
-                backdrop.classList.toggle('active');
-              }
+              if (sidebar) sidebar.classList.remove('open');
+              if (backdrop) backdrop.classList.remove('active');
             }
 
             // Aplicar tema inmediatamente para evitar parpadeos
             applyTheme(getInitialTheme());
-            document.addEventListener('DOMContentLoaded', function() {
+            window.addEventListener('DOMContentLoaded', function() {
               applyTheme(getInitialTheme());
+              if (window.innerWidth > 900) {
+                const savedCollapsed = localStorage.getItem('jettra_sidebar_collapsed');
+                if (savedCollapsed === 'true') {
+                  document.body.classList.add('sidebar-collapsed');
+                }
+              }
+              window.addEventListener('resize', function() {
+                if (window.innerWidth > 900) {
+                  closeMobileSidebar();
+                }
+              });
             });
           </script>
         """;

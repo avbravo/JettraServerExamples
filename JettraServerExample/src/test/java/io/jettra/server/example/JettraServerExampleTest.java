@@ -111,9 +111,14 @@ public class JettraServerExampleTest {
             // TOP: Header, Título, Modo Persistencia, Usuario y Logout
             JettraAssert.assertTrue(html.contains("ui-layout-top"), "Debe contener la sección TOP (Header)");
             JettraAssert.assertTrue(html.contains("Cerrar Sesión"), "Debe contener el botón de Logout en TOP");
+            JettraAssert.assertTrue(html.contains("hamburger-btn"), "Debe contener el botón responsivo de menú hamburguesa");
+            JettraAssert.assertTrue(html.contains("theme-toggle-btn"), "Debe contener el cambiador de temas Claro / Oscuro");
 
             // LEFT: Menú lateral con enlaces a páginas de ejemplo y JettraFlux
             JettraAssert.assertTrue(html.contains("ui-layout-left"), "Debe contener la sección LEFT (Sidebar Menu)");
+            JettraAssert.assertTrue(html.contains("/swagger-ui"), "Debe incluir enlace a Swagger-UI en menú lateral");
+            JettraAssert.assertTrue(html.contains("view=metrics"), "Debe incluir enlace a vista Flux de métricas");
+            JettraAssert.assertTrue(html.contains("view=health"), "Debe incluir enlace a vista Flux de estado de salud");
             JettraAssert.assertTrue(html.contains("/flux/storage-monitor"), "Debe incluir enlace a vista JettraFlux Storage");
             JettraAssert.assertTrue(html.contains("/flux/telemetry"), "Debe incluir enlace a vista JettraFlux Telemetry");
             JettraAssert.assertTrue(html.contains("/flux/counter"), "Debe incluir enlace a vista JettraFlux Counter");
@@ -267,6 +272,55 @@ public class JettraServerExampleTest {
             JettraAssert.assertTrue(resOpenApi.body().contains("/api/productos"), "Debe listar el endpoint de productos");
             JettraAssert.assertTrue(resOpenApi.body().contains("/api/security/users"), "Debe documentar endpoints de administración de seguridad");
             JettraAssert.assertTrue(resOpenApi.body().contains("/api/info"), "Debe listar el endpoint de info");
+        } finally {
+            server.stop();
+        }
+    }
+
+    @Test
+    @DisplayName("9. Verificar Vistas Reactivas JettraFlux de Metrics y Health")
+    public void testMetricsAndHealthFluxViews() throws Exception {
+        JettraServer server = App.startApplication(TEST_PORT + 8, StorageMode.JVM_RAM);
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+
+            // 1. Metrics Flux View
+            HttpRequest reqMetrics = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + (TEST_PORT + 8) + "/flux/metrics"))
+                .GET()
+                .build();
+            HttpResponse<String> resMetrics = client.send(reqMetrics, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, resMetrics.statusCode(), "Vista JettraFlux Metrics debe responder 200");
+            JettraAssert.assertTrue(resMetrics.body().contains("Métricas y Telemetría del Servidor"), "Debe contener el título de métricas");
+            JettraAssert.assertTrue(resMetrics.body().contains("Memoria JVM Usada"), "Debe mostrar el KPI de memoria");
+
+            // 2. Health Flux View
+            HttpRequest reqHealth = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + (TEST_PORT + 8) + "/flux/health"))
+                .GET()
+                .build();
+            HttpResponse<String> resHealth = client.send(reqHealth, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, resHealth.statusCode(), "Vista JettraFlux Health debe responder 200");
+            JettraAssert.assertTrue(resHealth.body().contains("Estado de Salud del Servidor"), "Debe contener el título de salud");
+            JettraAssert.assertTrue(resHealth.body().contains("UP"), "Debe reportar estado UP");
+
+            // 3. Embebido en Dashboard Center (?view=metrics)
+            HttpRequest reqDashMetrics = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + (TEST_PORT + 8) + "/dashboard.xhtml?view=metrics"))
+                .GET()
+                .build();
+            HttpResponse<String> resDashMetrics = client.send(reqDashMetrics, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, resDashMetrics.statusCode(), "Dashboard con vista metrics debe responder 200");
+            JettraAssert.assertTrue(resDashMetrics.body().contains("Métricas del Servidor - JettraFlux"), "Debe contener el título de la vista");
+
+            // 4. Embebido en Dashboard Center (?view=health)
+            HttpRequest reqDashHealth = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + (TEST_PORT + 8) + "/dashboard.xhtml?view=health"))
+                .GET()
+                .build();
+            HttpResponse<String> resDashHealth = client.send(reqDashHealth, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, resDashHealth.statusCode(), "Dashboard con vista health debe responder 200");
+            JettraAssert.assertTrue(resDashHealth.body().contains("Estado de Salud (Health) - JettraFlux"), "Debe contener el título de la vista");
         } finally {
             server.stop();
         }

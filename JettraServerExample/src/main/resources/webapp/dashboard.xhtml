@@ -19,6 +19,12 @@
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                 <p:button outcome="/dashboard.xhtml" value="General" styleClass="ui-button-sm ui-button-info"/>
                 <p:button href="/flux/catalogo" value="🛍️ Catálogo Flux" styleClass="ui-button-sm ui-button-success"/>
+                <p:button outcome="/dashboard.xhtml" value="📊 Métricas Flux" styleClass="ui-button-sm ui-button-secondary">
+                    <f:param name="view" value="metrics"/>
+                </p:button>
+                <p:button outcome="/dashboard.xhtml" value="🩺 Health Flux" styleClass="ui-button-sm ui-button-secondary">
+                    <f:param name="view" value="health"/>
+                </p:button>
                 <p:button outcome="/dashboard.xhtml" value="Storage Flux" styleClass="ui-button-sm ui-button-secondary">
                     <f:param name="view" value="storage-monitor"/>
                 </p:button>
@@ -59,6 +65,18 @@
                 <div style="border: 1px solid var(--border-subtle); padding: 1rem; border-radius: 8px;">
                     <a href="/flux/catalogo" style="text-decoration:none; font-weight:bold; color:#0284c7;">🛍️ Catálogo Reactivo (Flux)</a>
                     <p style="font-size:0.85rem; color:var(--text-muted); margin:0.35rem 0 0 0;">Gestión reactiva de inventario con sincronización inmediata.</p>
+                </div>
+                <div style="border: 1px solid var(--border-subtle); padding: 1rem; border-radius: 8px;">
+                    <a href="/dashboard.xhtml?view=metrics" style="text-decoration:none; font-weight:bold; color:#2563eb;">📊 Métricas del Servidor (Flux)</a>
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin:0.35rem 0 0 0;">Visualización de memoria JVM, Loom y almacenamiento.</p>
+                </div>
+                <div style="border: 1px solid var(--border-subtle); padding: 1rem; border-radius: 8px;">
+                    <a href="/dashboard.xhtml?view=health" style="text-decoration:none; font-weight:bold; color:#059669;">🩺 Estado de Salud (Flux)</a>
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin:0.35rem 0 0 0;">Auditoría de sondeos Liveness y Readiness.</p>
+                </div>
+                <div style="border: 1px solid var(--border-subtle); padding: 1rem; border-radius: 8px;">
+                    <a href="/swagger-ui" target="_blank" style="text-decoration:none; font-weight:bold; color:#8b5cf6;">📖 Swagger-UI (OpenAPI)</a>
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin:0.35rem 0 0 0;">Documentación interactiva y acreditación JWT.</p>
                 </div>
                 <div style="border: 1px solid var(--border-subtle); padding: 1rem; border-radius: 8px;">
                     <a href="/dashboard.xhtml?view=storage-monitor" style="text-decoration:none; font-weight:bold; color:var(--primary);">🚀 Monitor de Almacenamiento</a>
