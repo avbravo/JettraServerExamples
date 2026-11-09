@@ -11,8 +11,11 @@ import io.jettra.server.example.flux.InteractiveCounterFluxView;
 import io.jettra.server.example.flux.MetricsFluxView;
 import io.jettra.server.example.flux.StorageMonitorFluxView;
 import io.jettra.server.example.flux.TelemetryFluxView;
+import io.jettra.server.example.flux.CustomerFluxView;
+import io.jettra.server.example.model.Customer;
 import io.jettra.server.example.model.Product;
 import io.jettra.server.example.model.User;
+import io.jettra.server.example.service.CustomerClientService;
 import io.jettra.server.example.service.ProductService;
 import io.jettra.server.example.service.SecurityService;
 import io.jettra.server.example.util.Messages;
@@ -38,17 +41,34 @@ public class FacesRendererServlet extends HttpServlet {
     private final CdiContainer cdiContainer;
     private final SecurityService securityService;
     private final ProductService productService;
+    private final CustomerClientService customerService;
     private final JettraServer server;
 
     public FacesRendererServlet(CdiContainer cdiContainer, SecurityService securityService, ProductService productService) {
-        this(cdiContainer, securityService, productService, null);
+        this(cdiContainer, securityService, productService, null, null);
     }
 
     public FacesRendererServlet(CdiContainer cdiContainer, SecurityService securityService, ProductService productService, JettraServer server) {
+        this(cdiContainer, securityService, productService, null, server);
+    }
+
+    public FacesRendererServlet(CdiContainer cdiContainer, SecurityService securityService, ProductService productService, CustomerClientService customerService, JettraServer server) {
         this.cdiContainer = cdiContainer;
         this.securityService = securityService;
         this.productService = productService;
+        this.customerService = customerService;
         this.server = server;
+    }
+
+    private CustomerClientService getCustomerService() {
+        if (customerService != null) return customerService;
+        if (cdiContainer != null) {
+            try {
+                CustomerClientService svc = cdiContainer.getBean(CustomerClientService.class);
+                if (svc != null) return svc;
+            } catch (Exception ignored) {}
+        }
+        return new CustomerClientService();
     }
 
     @Override
@@ -85,6 +105,8 @@ public class FacesRendererServlet extends HttpServlet {
             }
         } else if (uri.endsWith("/productos.xhtml") || uri.endsWith("/productos")) {
             renderProductos(req, res);
+        } else if (uri.endsWith("/clientes.xhtml") || uri.endsWith("/clientes") || uri.endsWith("/customers.xhtml") || uri.endsWith("/customers")) {
+            renderClientes(req, res);
         } else if (uri.endsWith("/usuarios.xhtml") || uri.endsWith("/usuarios")) {
             renderUsuarios(req, res);
         } else {
@@ -136,6 +158,33 @@ public class FacesRendererServlet extends HttpServlet {
                 return;
             }
             res.sendRedirect("/productos.xhtml");
+        } else if (uri.endsWith("/clientes.xhtml") || uri.endsWith("/clientes") || uri.endsWith("/customers.xhtml") || uri.endsWith("/customers")) {
+            String action = req.getParameter("action");
+            CustomerClientService svc = getCustomerService();
+            if (svc != null) {
+                if ("save".equalsIgnoreCase(action)) {
+                    String id = req.getParameter("id");
+                    String name = req.getParameter("name");
+                    String email = req.getParameter("email");
+                    String company = req.getParameter("company");
+                    String tier = req.getParameter("tier");
+                    boolean active = "true".equalsIgnoreCase(req.getParameter("active")) || "on".equalsIgnoreCase(req.getParameter("active"));
+                    if (name != null && !name.isBlank()) {
+                        svc.saveCustomer(Customer.parse(id, name, email, company, tier, active));
+                    }
+                } else if ("delete".equalsIgnoreCase(action)) {
+                    String id = req.getParameter("id");
+                    if (id != null && !id.isBlank()) {
+                        svc.deleteCustomer(id);
+                    }
+                }
+            }
+            String returnTo = req.getParameter("returnTo");
+            if (returnTo != null && !returnTo.isBlank()) {
+                res.sendRedirect(returnTo);
+                return;
+            }
+            res.sendRedirect("/clientes.xhtml");
         } else {
             res.sendRedirect("/dashboard.xhtml");
         }
@@ -222,9 +271,12 @@ public class FacesRendererServlet extends HttpServlet {
             out.println("        </div>");
             out.println("        <div class=\"flux-tabs\">");
             out.println("          <a href=\"/dashboard.xhtml\" class=\"tab-pill active\">📊 General</a>");
+            out.println("          <a href=\"/clientes.xhtml\" class=\"tab-pill\">👥 Clientes MP-Client</a>");
             out.println("          <a href=\"/aura/demo\" class=\"tab-pill\">✨ Portal Aura</a>");
             out.println("          <a href=\"/aura/catalogo\" class=\"tab-pill\">📦 Catálogo Aura</a>");
+            out.println("          <a href=\"/aura/customers\" class=\"tab-pill\">👥 Clientes Aura</a>");
             out.println("          <a href=\"/flux/catalogo\" class=\"tab-pill\">🛍️ " + escapeHtml(Messages.get("flux.catalog.title")) + "</a>");
+            out.println("          <a href=\"/flux/customers\" class=\"tab-pill\">👥 Clientes Flux</a>");
             out.println("          <a href=\"/dashboard.xhtml?view=metrics\" class=\"tab-pill\">📊 Métricas Flux</a>");
             out.println("          <a href=\"/dashboard.xhtml?view=health\" class=\"tab-pill\">🩺 Health Flux</a>");
             out.println("          <a href=\"/dashboard.xhtml?view=storage-monitor\" class=\"tab-pill\">🚀 Storage Flux</a>");
@@ -718,6 +770,257 @@ public class FacesRendererServlet extends HttpServlet {
         out.println("      </script>");
     }
 
+    private void renderClientes(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        HttpSession session = req.getSession(false);
+        User user = session != null ? (User) session.getAttribute("user") : new User("admin", "", "Administrador", "ADMIN", "");
+
+        CustomerClientService svc = getCustomerService();
+        List<Customer> customers = svc.listAll();
+        long activeCount = customers.stream().filter(Customer::isActive).count();
+
+        res.setContentType("text/html; charset=UTF-8");
+        PrintWriter out = res.getWriter();
+        String activeStorage = getEffectiveStorageMode();
+
+        renderTemplate(out, "Gestión de Clientes (MP-Rest Client)", user, activeStorage, "clientes", () -> {
+            out.println("      <div style=\"display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;\">");
+            out.println("        <div>");
+            out.println("          <h1 style=\"font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0;\">👥 Clientes Enterprise (Eclipse MicroProfile Rest Client)</h1>");
+            out.println("          <p style=\"color: var(--text-muted); margin: 0.25rem 0 0;\">Comunicación CRUD con BackEndExample autenticada mediante Jettra JWT Bearer Token</p>");
+            out.println("        </div>");
+            out.println("        <div style=\"display: flex; gap: 0.5rem; flex-wrap: wrap;\">");
+            out.println("          <button type=\"button\" class=\"app-btn-primary\" style=\"background: #10b981;\" onclick=\"openCustomerRegisterDialog()\">➕ Registrar Nuevo Cliente (Diálogo)</button>");
+            out.println("          <a href=\"/flux/customers\" class=\"app-btn-secondary\" style=\"text-decoration: none;\">⚡ Ver en JettraFlux</a>");
+            out.println("          <a href=\"/aura/customers\" class=\"app-btn-secondary\" style=\"text-decoration: none;\">✨ Ver en JettraAura</a>");
+            out.println("        </div>");
+            out.println("      </div>");
+
+            // KPI Grid informativo sobre la conexión MicroProfile REST Client y JWT
+            out.println("      <div class=\"kpi-grid\" style=\"margin-bottom: 1.5rem;\">");
+            out.println("        <div class=\"ui-card kpi-card\">");
+            out.println("          <div class=\"kpi-title\">Total Clientes Remotos</div>");
+            out.println("          <div class=\"kpi-value\" style=\"color: var(--primary);\">" + customers.size() + " Registros</div>");
+            out.println("          <div class=\"kpi-sub\" style=\"color: var(--success);\">● Sincronizado vía RestClient</div>");
+            out.println("        </div>");
+            out.println("        <div class=\"ui-card kpi-card\">");
+            out.println("          <div class=\"kpi-title\">Clientes Activos</div>");
+            out.println("          <div class=\"kpi-value\" style=\"color: var(--success);\">" + activeCount + " Activos</div>");
+            out.println("          <div class=\"kpi-sub\" style=\"color: var(--text-muted);\">Cuentas operativas</div>");
+            out.println("        </div>");
+            out.println("        <div class=\"ui-card kpi-card\">");
+            out.println("          <div class=\"kpi-title\">MicroProfile Rest Client</div>");
+            out.println("          <div class=\"kpi-value\" style=\"font-size: 1.1rem; color: #a855f7;\">@RegisterRestClient</div>");
+            out.println("          <div class=\"kpi-sub\" style=\"color: var(--text-muted);\">MP 3.0 Specification SPI</div>");
+            out.println("        </div>");
+            out.println("        <div class=\"ui-card kpi-card\">");
+            out.println("          <div class=\"kpi-title\">Seguridad Jettra JWT</div>");
+            out.println("          <div class=\"kpi-value\" style=\"color: var(--success); font-size: 1.1rem;\">● ACTIVO</div>");
+            out.println("          <div class=\"kpi-sub\" style=\"color: var(--text-muted);\">Bearer Token HMAC-SHA256</div>");
+            out.println("        </div>");
+            out.println("      </div>");
+
+            // Formulario Rápido Responsivo
+            out.println("      <div class=\"ui-panel\" style=\"background: var(--bg-card); padding: 1.25rem; border-radius: 10px; border: 1px solid var(--border-subtle); margin-bottom: 1.5rem; box-shadow: var(--shadow-sm);\">");
+            out.println("        <form method=\"post\" action=\"/clientes.xhtml\" class=\"responsive-form\">");
+            out.println("          <input type=\"hidden\" name=\"action\" value=\"save\" />");
+            out.println("          <div style=\"flex: 2; min-width: 180px;\"><label style=\"display:block; font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-bottom:0.25rem;\">Nombre Cliente</label><input type=\"text\" name=\"name\" required class=\"app-input\" placeholder=\"Ej. Global Logistics Inc.\" /></div>");
+            out.println("          <div style=\"flex: 2; min-width: 180px;\"><label style=\"display:block; font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-bottom:0.25rem;\">Correo Electrónico</label><input type=\"email\" name=\"email\" required class=\"app-input\" placeholder=\"info@globallogistics.com\" /></div>");
+            out.println("          <div style=\"flex: 1.5; min-width: 150px;\"><label style=\"display:block; font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-bottom:0.25rem;\">Empresa / Holding</label><input type=\"text\" name=\"company\" value=\"Global Logistics\" class=\"app-input\" /></div>");
+            out.println("          <div style=\"flex: 1; min-width: 120px;\"><label style=\"display:block; font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-bottom:0.25rem;\">Nivel (Tier)</label>");
+            out.println("            <select name=\"tier\" class=\"app-input\">");
+            out.println("              <option value=\"STANDARD\">STANDARD</option>");
+            out.println("              <option value=\"PREMIUM\">PREMIUM</option>");
+            out.println("              <option value=\"ENTERPRISE\">ENTERPRISE</option>");
+            out.println("            </select>");
+            out.println("          </div>");
+            out.println("          <div style=\"flex: 0.8; min-width: 80px; display:flex; align-items:center; gap:0.4rem; padding-top:1.2rem;\">");
+            out.println("            <input type=\"checkbox\" id=\"quickActive\" name=\"active\" value=\"true\" checked style=\"width:18px; height:18px; accent-color:var(--primary); cursor:pointer;\" />");
+            out.println("            <label for=\"quickActive\" style=\"font-size:0.8rem; color:var(--text-main); font-weight:600; cursor:pointer;\">Activo</label>");
+            out.println("          </div>");
+            out.println("          <div style=\"align-self: flex-end; display: flex; gap: 0.5rem;\">");
+            out.println("            <button type=\"submit\" class=\"app-btn-primary\">+ Añadir Cliente</button>");
+            out.println("            <button type=\"button\" class=\"app-btn-secondary\" onclick=\"openCustomerRegisterDialog()\">➕ Diálogo</button>");
+            out.println("          </div>");
+            out.println("        </form>");
+            out.println("      </div>");
+
+            // Tabla PrimeFaces Responsiva de Clientes
+            out.println("      <div class=\"table-container ui-card\" style=\"border: 1px solid var(--border-subtle); border-radius: 10px; overflow: hidden;\">");
+            out.println("        <table class=\"app-table\">");
+            out.println("          <thead>");
+            out.println("            <tr>");
+            out.println("              <th style=\"width: 60px;\">ID</th>");
+            out.println("              <th>Nombre</th>");
+            out.println("              <th>Correo Electrónico</th>");
+            out.println("              <th>Empresa</th>");
+            out.println("              <th>Nivel (Tier)</th>");
+            out.println("              <th>Estado</th>");
+            out.println("              <th style=\"text-align: right;\">Acciones</th>");
+            out.println("            </tr>");
+            out.println("          </thead>");
+            out.println("          <tbody>");
+
+            for (Customer c : customers) {
+                String jsId = c.getId() != null ? String.valueOf(c.getId()) : "";
+                String jsName = escapeJs(c.getName());
+                String jsEmail = escapeJs(c.getEmail());
+                String jsCompany = escapeJs(c.getCompany() != null ? c.getCompany() : "");
+                String jsTier = escapeJs(c.getTier() != null ? c.getTier() : "STANDARD");
+                boolean isActive = c.isActive();
+
+                String tierBadgeStyle = switch (jsTier.toUpperCase()) {
+                    case "ENTERPRISE" -> "background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.4);";
+                    case "PREMIUM" -> "background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.4);";
+                    default -> "background: var(--bg-subtle); color: var(--text-muted); border: 1px solid var(--border-subtle);";
+                };
+
+                String statusBadge = isActive
+                        ? "<span style=\"background: var(--success-light); color: var(--success); padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;\">● Activo</span>"
+                        : "<span style=\"background: var(--danger-light); color: var(--danger); padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;\">○ Inactivo</span>";
+
+                out.println("            <tr>");
+                out.println("              <td style=\"font-weight: 700; color: var(--primary);\">#" + c.getId() + "</td>");
+                out.println("              <td style=\"font-weight: 600; color: var(--text-main);\">" + escapeHtml(c.getName()) + "</td>");
+                out.println("              <td><a href=\"mailto:" + escapeHtml(c.getEmail()) + "\" style=\"color: var(--primary); text-decoration: none;\">" + escapeHtml(c.getEmail()) + "</a></td>");
+                out.println("              <td style=\"color: var(--text-muted);\">" + escapeHtml(c.getCompany()) + "</td>");
+                out.println("              <td><span style=\"padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.78rem; font-weight: 700; " + tierBadgeStyle + "\">" + escapeHtml(c.getTier()) + "</span></td>");
+                out.println("              <td>" + statusBadge + "</td>");
+                out.println("              <td style=\"text-align: right;\">");
+                out.println("                <div style=\"display: inline-flex; gap: 0.45rem; align-items: center;\">");
+                out.println("                  <button type=\"button\" class=\"app-btn-secondary\" style=\"padding: 0.25rem 0.65rem; font-size: 0.8rem; color: var(--primary); border-color: var(--primary);\" onclick=\"openCustomerEditDialog('" + jsId + "', '" + jsName + "', '" + jsEmail + "', '" + jsCompany + "', '" + jsTier + "', " + isActive + ")\">✏️ Editar</button>");
+                out.println("                  <button type=\"button\" class=\"app-btn-danger\" style=\"padding: 0.25rem 0.65rem; font-size: 0.8rem;\" onclick=\"openCustomerDeleteDialog('" + jsId + "', '" + jsName + "', '" + jsEmail + "', '" + jsCompany + "')\">🗑️ Eliminar</button>");
+                out.println("                </div>");
+                out.println("              </td>");
+                out.println("            </tr>");
+            }
+
+            out.println("          </tbody>");
+            out.println("        </table>");
+            out.println("      </div>");
+
+            renderCustomerDialogsAndScript(out, "/clientes.xhtml");
+        });
+    }
+
+    private void renderCustomerDialogsAndScript(PrintWriter out, String returnToUrl) {
+        String safeReturn = escapeHtml(returnToUrl != null ? returnToUrl : "/clientes.xhtml");
+
+        // 1. Diálogo Modal para Registrar Nuevo Cliente
+        out.println("      <div id=\"customerRegisterDialog\" style=\"display:none; position:fixed; inset:0; background:rgba(15,23,42,0.75); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:1rem;\">");
+        out.println("        <div class=\"ui-card\" style=\"background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:14px; width:100%; max-width:520px; padding:1.5rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);\">");
+        out.println("          <div style=\"display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-subtle); padding-bottom:0.85rem; margin-bottom:1rem;\">");
+        out.println("            <h3 style=\"margin:0; font-size:1.15rem; font-weight:700; color:var(--text-main);\">➕ Registrar Nuevo Cliente (MP-Rest Client)</h3>");
+        out.println("            <button type=\"button\" onclick=\"closeCustomerDialog('customerRegisterDialog')\" style=\"background:transparent; border:none; color:var(--text-muted); font-size:1.25rem; cursor:pointer;\">✕</button>");
+        out.println("          </div>");
+        out.println("          <form method=\"post\" action=\"/clientes.xhtml\" style=\"display:flex; flex-direction:column; gap:0.85rem;\">");
+        out.println("            <input type=\"hidden\" name=\"action\" value=\"save\" />");
+        out.println("            <input type=\"hidden\" name=\"returnTo\" value=\"" + safeReturn + "\" />");
+        out.println("            <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Nombre Completo / Razón Social:</label><input type=\"text\" name=\"name\" required class=\"app-input\" placeholder=\"Ej. Stark Enterprises\" /></div>");
+        out.println("            <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Correo Electrónico:</label><input type=\"email\" name=\"email\" required class=\"app-input\" placeholder=\"contacto@stark.com\" /></div>");
+        out.println("            <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Compañía / Grupo:</label><input type=\"text\" name=\"company\" value=\"Stark Group\" class=\"app-input\" /></div>");
+        out.println("            <div style=\"display:grid; grid-template-columns:1fr 1fr; gap:0.85rem; align-items:center;\">");
+        out.println("              <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Nivel (Tier):</label>");
+        out.println("                <select name=\"tier\" class=\"app-input\">");
+        out.println("                  <option value=\"STANDARD\">STANDARD</option>");
+        out.println("                  <option value=\"PREMIUM\">PREMIUM</option>");
+        out.println("                  <option value=\"ENTERPRISE\">ENTERPRISE</option>");
+        out.println("                </select>");
+        out.println("              </div>");
+        out.println("              <div style=\"display:flex; align-items:center; gap:0.5rem; padding-top:1.2rem;\">");
+        out.println("                <input type=\"checkbox\" id=\"regCustActive\" name=\"active\" value=\"true\" checked style=\"width:18px; height:18px; accent-color:var(--primary); cursor:pointer;\" />");
+        out.println("                <label for=\"regCustActive\" style=\"font-size:0.85rem; color:var(--text-main); font-weight:600; cursor:pointer;\">Cuenta Activa</label>");
+        out.println("              </div>");
+        out.println("            </div>");
+        out.println("            <div style=\"display:flex; justify-content:flex-end; gap:0.75rem; margin-top:0.5rem; padding-top:0.85rem; border-top:1px solid var(--border-subtle);\">");
+        out.println("              <button type=\"button\" class=\"app-btn-secondary\" onclick=\"closeCustomerDialog('customerRegisterDialog')\">Cancelar</button>");
+        out.println("              <button type=\"submit\" class=\"app-btn-primary\" style=\"background:#10b981;\">➕ Guardar Cliente</button>");
+        out.println("            </div>");
+        out.println("          </form>");
+        out.println("        </div>");
+        out.println("      </div>");
+
+        // 2. Diálogo Modal para Editar Cliente
+        out.println("      <div id=\"customerEditDialog\" style=\"display:none; position:fixed; inset:0; background:rgba(15,23,42,0.75); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:1rem;\">");
+        out.println("        <div class=\"ui-card\" style=\"background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:14px; width:100%; max-width:520px; padding:1.5rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);\">");
+        out.println("          <div style=\"display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-subtle); padding-bottom:0.85rem; margin-bottom:1rem;\">");
+        out.println("            <h3 id=\"custEditTitle\" style=\"margin:0; font-size:1.15rem; font-weight:700; color:var(--text-main);\">✏️ Editar Cliente</h3>");
+        out.println("            <button type=\"button\" onclick=\"closeCustomerDialog('customerEditDialog')\" style=\"background:transparent; border:none; color:var(--text-muted); font-size:1.25rem; cursor:pointer;\">✕</button>");
+        out.println("          </div>");
+        out.println("          <form method=\"post\" action=\"/clientes.xhtml\" style=\"display:flex; flex-direction:column; gap:0.85rem;\">");
+        out.println("            <input type=\"hidden\" name=\"action\" value=\"save\" />");
+        out.println("            <input type=\"hidden\" name=\"returnTo\" value=\"" + safeReturn + "\" />");
+        out.println("            <input type=\"hidden\" id=\"custEditId\" name=\"id\" value=\"\" />");
+        out.println("            <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Nombre Completo:</label><input type=\"text\" id=\"custEditName\" name=\"name\" required class=\"app-input\" /></div>");
+        out.println("            <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Correo Electrónico:</label><input type=\"email\" id=\"custEditEmail\" name=\"email\" required class=\"app-input\" /></div>");
+        out.println("            <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Compañía:</label><input type=\"text\" id=\"custEditCompany\" name=\"company\" class=\"app-input\" /></div>");
+        out.println("            <div style=\"display:grid; grid-template-columns:1fr 1fr; gap:0.85rem; align-items:center;\">");
+        out.println("              <div><label style=\"display:block; font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-bottom:0.3rem;\">Nivel (Tier):</label>");
+        out.println("                <select id=\"custEditTier\" name=\"tier\" class=\"app-input\">");
+        out.println("                  <option value=\"STANDARD\">STANDARD</option>");
+        out.println("                  <option value=\"PREMIUM\">PREMIUM</option>");
+        out.println("                  <option value=\"ENTERPRISE\">ENTERPRISE</option>");
+        out.println("                </select>");
+        out.println("              </div>");
+        out.println("              <div style=\"display:flex; align-items:center; gap:0.5rem; padding-top:1.2rem;\">");
+        out.println("                <input type=\"checkbox\" id=\"custEditActive\" name=\"active\" value=\"true\" style=\"width:18px; height:18px; accent-color:var(--primary); cursor:pointer;\" />");
+        out.println("                <label for=\"custEditActive\" style=\"font-size:0.85rem; color:var(--text-main); font-weight:600; cursor:pointer;\">Cuenta Activa</label>");
+        out.println("              </div>");
+        out.println("            </div>");
+        out.println("            <div style=\"display:flex; justify-content:flex-end; gap:0.75rem; margin-top:0.5rem; padding-top:0.85rem; border-top:1px solid var(--border-subtle);\">");
+        out.println("              <button type=\"button\" class=\"app-btn-secondary\" onclick=\"closeCustomerDialog('customerEditDialog')\">Cancelar</button>");
+        out.println("              <button type=\"submit\" class=\"app-btn-primary\">💾 Guardar Cambios</button>");
+        out.println("            </div>");
+        out.println("          </form>");
+        out.println("        </div>");
+        out.println("      </div>");
+
+        // 3. Diálogo Modal para Confirmar Eliminación de Cliente
+        out.println("      <div id=\"customerDeleteDialog\" style=\"display:none; position:fixed; inset:0; background:rgba(15,23,42,0.75); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:1rem;\">");
+        out.println("        <div class=\"ui-card\" style=\"background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:14px; width:100%; max-width:480px; padding:1.5rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);\">");
+        out.println("          <div style=\"display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-subtle); padding-bottom:0.85rem; margin-bottom:1rem;\">");
+        out.println("            <h3 style=\"margin:0; font-size:1.15rem; font-weight:700; color:var(--text-main);\">🗑️ Confirmar Eliminación de Cliente</h3>");
+        out.println("            <button type=\"button\" onclick=\"closeCustomerDialog('customerDeleteDialog')\" style=\"background:transparent; border:none; color:var(--text-muted); font-size:1.25rem; cursor:pointer;\">✕</button>");
+        out.println("          </div>");
+        out.println("          <p id=\"custDeleteMsg\" style=\"font-size:0.95rem; font-weight:600; color:var(--text-main); margin:0 0 0.85rem 0;\">¿Está seguro que desea eliminar este cliente?</p>");
+        out.println("          <div id=\"custDeleteDetails\" style=\"background:var(--danger-light); border:1px solid var(--danger); color:var(--danger); padding:0.75rem 1rem; border-radius:8px; font-size:0.85rem; margin-bottom:1rem;\"></div>");
+        out.println("          <form method=\"post\" action=\"/clientes.xhtml\" style=\"display:flex; justify-content:flex-end; gap:0.75rem; padding-top:0.85rem; border-top:1px solid var(--border-subtle);\">");
+        out.println("            <input type=\"hidden\" name=\"action\" value=\"delete\" />");
+        out.println("            <input type=\"hidden\" name=\"returnTo\" value=\"" + safeReturn + "\" />");
+        out.println("            <input type=\"hidden\" id=\"custDeleteId\" name=\"id\" value=\"\" />");
+        out.println("            <button type=\"button\" class=\"app-btn-secondary\" onclick=\"closeCustomerDialog('customerDeleteDialog')\">Cancelar</button>");
+        out.println("            <button type=\"submit\" class=\"app-btn-danger\">🗑️ Confirmar Eliminación</button>");
+        out.println("          </form>");
+        out.println("        </div>");
+        out.println("      </div>");
+
+        out.println("      <script>");
+        out.println("        function openCustomerRegisterDialog() {");
+        out.println("          const d = document.getElementById('customerRegisterDialog');");
+        out.println("          if (d) d.style.display = 'flex';");
+        out.println("        }");
+        out.println("        function openCustomerEditDialog(id, name, email, company, tier, active) {");
+        out.println("          document.getElementById('custEditTitle').textContent = '✏️ Editar Cliente (#' + id + ')';");
+        out.println("          document.getElementById('custEditId').value = id;");
+        out.println("          document.getElementById('custEditName').value = name;");
+        out.println("          document.getElementById('custEditEmail').value = email;");
+        out.println("          document.getElementById('custEditCompany').value = company || '';");
+        out.println("          document.getElementById('custEditTier').value = tier || 'STANDARD';");
+        out.println("          document.getElementById('custEditActive').checked = !!active;");
+        out.println("          document.getElementById('customerEditDialog').style.display = 'flex';");
+        out.println("        }");
+        out.println("        function openCustomerDeleteDialog(id, name, email, company) {");
+        out.println("          document.getElementById('custDeleteId').value = id;");
+        out.println("          document.getElementById('custDeleteMsg').textContent = '¿Está seguro que desea eliminar a \"' + name + '\" (#' + id + ')?';");
+        out.println("          document.getElementById('custDeleteDetails').textContent = 'Email: ' + email + ' | Empresa: ' + company;");
+        out.println("          document.getElementById('customerDeleteDialog').style.display = 'flex';");
+        out.println("        }");
+        out.println("        function closeCustomerDialog(dialogId) {");
+        out.println("          const d = document.getElementById(dialogId);");
+        out.println("          if (d) d.style.display = 'none';");
+        out.println("        }");
+        out.println("      </script>");
+    }
+
     private String escapeJs(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("'", "\\'").replace("\"", "&quot;");
@@ -792,12 +1095,14 @@ public class FacesRendererServlet extends HttpServlet {
         out.println("      <nav style=\"display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1.75rem;\">");
         out.println("        <a href=\"/dashboard.xhtml\" class=\"nav-link " + ("general".equals(activeSection) ? "active" : "") + "\">📊 Dashboard</a>");
         out.println("        <a href=\"/productos.xhtml\" class=\"nav-link " + ("productos".equals(activeSection) ? "active" : "") + "\">📦 Catálogo JPA</a>");
+        out.println("        <a href=\"/clientes.xhtml\" class=\"nav-link " + ("clientes".equals(activeSection) ? "active" : "") + "\">👥 Clientes MP-Client (JWT)</a>");
         out.println("        <a href=\"/usuarios.xhtml\" class=\"nav-link " + ("usuarios".equals(activeSection) ? "active" : "") + "\">👥 Usuarios Security</a>");
         out.println("      </nav>");
 
         out.println("      <div style=\"font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-light); margin-bottom: 0.75rem; letter-spacing: 0.05em;\">⚡ Vistas JettraFlux (Java Puro)</div>");
         out.println("      <nav style=\"display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1.75rem;\">");
         out.println("        <a href=\"/flux/catalogo\" class=\"nav-link " + (("catalogo-flux".equals(activeSection) || "catalogo".equals(activeSection)) ? "active" : "") + "\">🛍️ Catálogo Reactivo (Flux)</a>");
+        out.println("        <a href=\"/flux/customers\" class=\"nav-link " + ("flux-customers".equals(activeSection) ? "active" : "") + "\">👥 Clientes CRUD (Flux)</a>");
         out.println("        <a href=\"/dashboard.xhtml?view=metrics\" class=\"nav-link " + ("metrics".equals(activeSection) ? "active" : "") + "\">📊 Métricas del Servidor (Flux)</a>");
         out.println("        <a href=\"/dashboard.xhtml?view=health\" class=\"nav-link " + ("health".equals(activeSection) ? "active" : "") + "\">🩺 Estado de Salud (Flux)</a>");
         out.println("        <a href=\"/flux/storage-monitor\" class=\"nav-link " + ("storage-monitor".equals(activeSection) ? "active" : "") + "\">🚀 Monitor Almacenamiento</a>");
@@ -805,10 +1110,11 @@ public class FacesRendererServlet extends HttpServlet {
         out.println("        <a href=\"/flux/counter\" class=\"nav-link " + ("counter".equals(activeSection) ? "active" : "") + "\">🎛️ Contador Reactivo</a>");
         out.println("      </nav>");
 
-        out.println("      <div style=\"font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-light); margin-bottom: 0.75rem; letter-spacing: 0.05em;\">✨ Ejemplos JettraAura)</div>");
+        out.println("      <div style=\"font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-light); margin-bottom: 0.75rem; letter-spacing: 0.05em;\">✨ Ejemplos JettraAura</div>");
         out.println("      <nav style=\"display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1.75rem;\">");
         out.println("        <a href=\"/aura/demo\" class=\"nav-link\">✨ Portal JettraAura</a>");
         out.println("        <a href=\"/aura/catalogo\" class=\"nav-link\">📦 Catálogo Dinámico (ListView)</a>");
+        out.println("        <a href=\"/aura/customers\" class=\"nav-link\">👥 Clientes CRUD (Modales)</a>");
         out.println("        <a href=\"/aura/formulario\" class=\"nav-link\">📝 Formulario Reactivo (CPM)</a>");
         out.println("        <a href=\"/aura/contador\" class=\"nav-link\">⚡ Contador AJAX Parcial</a>");
         out.println("      </nav>");

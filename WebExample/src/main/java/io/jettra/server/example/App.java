@@ -8,8 +8,10 @@ import io.jettra.server.example.aura.AuraCatalogPage;
 import io.jettra.server.example.aura.AuraCounterPage;
 import io.jettra.server.example.aura.AuraPortalPage;
 import io.jettra.server.example.aura.AuraUserFormPage;
+import io.jettra.server.example.aura.CustomerAuraPage;
 import io.jettra.server.example.faces.FacesRendererServlet;
 import io.jettra.server.example.flux.CatalogoFlux;
+import io.jettra.server.example.flux.CustomerFluxView;
 import io.jettra.server.example.flux.FluxTemplateView;
 import io.jettra.server.example.flux.HealthFluxView;
 import io.jettra.server.example.flux.InteractiveCounterFluxView;
@@ -18,6 +20,7 @@ import io.jettra.server.example.flux.StorageMonitorFluxView;
 import io.jettra.server.example.flux.TelemetryFluxView;
 import io.jettra.server.example.rest.ProductResource;
 import io.jettra.server.example.rest.ServerInfoResource;
+import io.jettra.server.example.service.CustomerClientService;
 import io.jettra.server.example.service.ProductService;
 import io.jettra.server.example.service.SecurityService;
 import io.jettra.server.flux.FluxModule;
@@ -84,14 +87,21 @@ public class App {
         productService.initSampleCatalog();
         jakarta.getCdiContainer().registerSingleton(ProductService.class, productService);
 
+        CustomerClientService customerService = new CustomerClientService();
+        jakarta.getCdiContainer().registerSingleton(CustomerClientService.class, customerService);
+
         // 3. Registrar Servlet de PrimeFaces / Jakarta Faces (Login y Dashboard con plantilla)
         FacesRendererServlet facesServlet = new FacesRendererServlet(
-            jakarta.getCdiContainer(), securityService, productService, server
+            jakarta.getCdiContainer(), securityService, productService, customerService, server
         );
         jakarta.getServletBridge().registerServlet("/", facesServlet);
         jakarta.getServletBridge().registerServlet("/login.xhtml", facesServlet);
         jakarta.getServletBridge().registerServlet("/dashboard.xhtml", facesServlet);
         jakarta.getServletBridge().registerServlet("/productos.xhtml", facesServlet);
+        jakarta.getServletBridge().registerServlet("/clientes.xhtml", facesServlet);
+        jakarta.getServletBridge().registerServlet("/clientes", facesServlet);
+        jakarta.getServletBridge().registerServlet("/customers.xhtml", facesServlet);
+        jakarta.getServletBridge().registerServlet("/customers", facesServlet);
         jakarta.getServletBridge().registerServlet("/usuarios.xhtml", facesServlet);
         jakarta.getServletBridge().registerServlet("/flux/storage-monitor", facesServlet);
         jakarta.getServletBridge().registerServlet("/flux/telemetry", facesServlet);
@@ -144,6 +154,24 @@ public class App {
                 new CatalogoFlux(productService)
             )
         );
+        flux.page("/flux/customers", "JettraFlux - Clientes MicroProfile Rest Client", () ->
+            new FluxTemplateView(
+                "Gestión de Clientes (MP-Rest Client + JWT) - JettraFlux",
+                "customers",
+                server,
+                null,
+                new CustomerFluxView(customerService)
+            )
+        );
+        flux.page("/flux/clientes", "JettraFlux - Clientes MicroProfile Rest Client", () ->
+            new FluxTemplateView(
+                "Gestión de Clientes (MP-Rest Client + JWT) - JettraFlux",
+                "customers",
+                server,
+                null,
+                new CustomerFluxView(customerService)
+            )
+        );
         flux.page("/flux/metrics", "JettraFlux - Métricas del Servidor", () ->
             new FluxTemplateView(
                 "Métricas del Servidor - JettraFlux",
@@ -180,6 +208,8 @@ public class App {
         aura.page("/aura/demo", AuraPortalPage.class);
         aura.page("/aura", AuraPortalPage.class);
         aura.page("/aura/catalogo", AuraCatalogPage.class);
+        aura.page("/aura/customers", CustomerAuraPage.class);
+        aura.page("/aura/clientes", CustomerAuraPage.class);
         aura.page("/aura/formulario", AuraUserFormPage.class);
         aura.page("/aura/contador", AuraCounterPage.class);
 
@@ -199,16 +229,19 @@ public class App {
         System.out.println(" -> URL Login PrimeFaces : http://localhost:" + port + "/login.xhtml");
         System.out.println(" -> URL Dashboard        : http://localhost:" + port + "/dashboard.xhtml");
         System.out.println(" -> URL Catálogo JPA     : http://localhost:" + port + "/productos.xhtml");
+        System.out.println(" -> URL Clientes Faces   : http://localhost:" + port + "/clientes.xhtml");
         System.out.println(" -> Swagger-UI (JettraFlux): http://localhost:" + port + "/swagger-ui");
         System.out.println(" -> Vistas JettraFlux    : http://localhost:" + port + "/flux/storage-monitor");
         System.out.println("                         : http://localhost:" + port + "/flux/telemetry");
         System.out.println("                         : http://localhost:" + port + "/flux/counter");
         System.out.println("                         : http://localhost:" + port + "/flux/catalogo");
+        System.out.println("                         : http://localhost:" + port + "/flux/customers");
         System.out.println("                         : http://localhost:" + port + "/flux/metrics");
         System.out.println("                         : http://localhost:" + port + "/flux/health");
         System.out.println(" -> Vistas JettraAura :");
         System.out.println("                         : http://localhost:" + port + "/aura/demo");
         System.out.println("                         : http://localhost:" + port + "/aura/catalogo");
+        System.out.println("                         : http://localhost:" + port + "/aura/customers");
         System.out.println("                         : http://localhost:" + port + "/aura/formulario");
         System.out.println("                         : http://localhost:" + port + "/aura/contador");
         System.out.println(" -> Endpoints REST       : http://localhost:" + port + "/api/productos");

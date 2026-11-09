@@ -2,7 +2,10 @@ package io.jettra.server.example;
 
 import io.jettra.server.core.JettraServer;
 import io.jettra.server.core.storage.StorageMode;
+import io.jettra.server.example.client.JettraJwtAuthManager;
+import io.jettra.server.example.model.Customer;
 import io.jettra.server.example.model.Product;
+import io.jettra.server.example.service.CustomerClientService;
 import io.jettra.server.example.service.ProductService;
 import io.jettra.test.annotation.DisplayName;
 import io.jettra.test.annotation.Test;
@@ -574,5 +577,156 @@ public class WebExampleTest {
             server.stop();
         }
     }
+
+    @Test
+    @DisplayName("15. Verificar comunicación Eclipse MicroProfile Rest Client y Jettra JWT")
+    public void testMicroProfileRestClientWithJettraJwt() throws Exception {
+        CustomerClientService customerService = new CustomerClientService();
+        JettraAssert.assertNotNull(customerService, "CustomerClientService debe instanciarse exitosamente");
+
+        // 1. Validar adquisición y formato del Token Bearer Jettra JWT
+        String token = customerService.getActiveJwtToken();
+        JettraAssert.assertNotNull(token, "Debe proveer un Bearer Token JWT activo");
+        JettraAssert.assertTrue(token.startsWith("Bearer "), "El token debe tener prefijo 'Bearer '");
+        String jwt = token.substring(7);
+        JettraAssert.assertTrue(jwt.contains("."), "El token JWT debe contener segmentos separados por puntos");
+
+        // 2. Operación CRUD: Listar clientes iniciales
+        var initialList = customerService.listAll();
+        JettraAssert.assertNotNull(initialList, "La lista de clientes no debe ser nula");
+        JettraAssert.assertTrue(initialList.size() >= 4, "Debe contener al menos los 4 registros iniciales");
+
+        // 3. Operación CRUD: Crear / Guardar nuevo cliente
+        Customer newCust = new Customer("Wayne Biotech Corp", "contact@wayne.biotech", "Wayne Enterprises", "ENTERPRISE", true);
+        Customer saved = customerService.save(newCust);
+        JettraAssert.assertNotNull(saved, "El cliente guardado no debe ser nulo");
+        JettraAssert.assertNotNull(saved.getId(), "El cliente guardado debe recibir un ID numérico");
+        JettraAssert.assertEquals("Wayne Biotech Corp", saved.getName(), "El nombre del cliente guardado debe coincidir");
+
+        // 4. Operación CRUD: Buscar por ID
+        var foundOpt = customerService.findById(saved.getId());
+        JettraAssert.assertTrue(foundOpt.isPresent(), "Debe encontrar al cliente recién creado por su ID");
+        JettraAssert.assertEquals("Wayne Biotech Corp", foundOpt.get().getName(), "Los datos deben persistir de forma consistente");
+
+        // 5. Operación CRUD: Eliminar cliente
+        boolean deleted = customerService.delete(saved.getId());
+        JettraAssert.assertTrue(deleted, "La eliminación del cliente debe retornar true");
+        var afterDelete = customerService.findById(saved.getId());
+        JettraAssert.assertTrue(afterDelete.isEmpty(), "El cliente eliminado ya no debe estar disponible");
+    }
+
+    @Test
+    @DisplayName("16. Verificar interfaz CRUD Clientes en Jakarta Faces (.xhtml / PrimeFaces)")
+    public void testClientesFacesCrudPage() throws Exception {
+        int port = TEST_PORT + 14;
+        JettraServer server = App.startApplication(port, StorageMode.JVM_RAM);
+        try {
+            HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
+
+            // 1. GET /clientes.xhtml
+            HttpRequest reqGet = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + port + "/clientes.xhtml"))
+                .GET()
+                .build();
+            HttpResponse<String> resGet = client.send(reqGet, HttpResponse.BodyHandlers.ofString());
+
+            JettraAssert.assertEquals(200, resGet.statusCode(), "/clientes.xhtml debe responder HTTP 200");
+            JettraAssert.assertTrue(resGet.body().contains("Clientes Enterprise (Eclipse MicroProfile Rest Client)"), "Debe contener el encabezado de Clientes");
+            JettraAssert.assertTrue(resGet.body().contains("@RegisterRestClient"), "Debe mostrar el indicador de MicroProfile Rest Client");
+            JettraAssert.assertTrue(resGet.body().contains("Jettra JWT"), "Debe mostrar el indicador de autenticación Jettra JWT");
+            JettraAssert.assertTrue(resGet.body().contains("customerRegisterDialog"), "Debe incluir el diálogo modal de registro");
+            JettraAssert.assertTrue(resGet.body().contains("customerEditDialog"), "Debe incluir el diálogo modal de edición");
+            JettraAssert.assertTrue(resGet.body().contains("customerDeleteDialog"), "Debe incluir el diálogo modal de eliminación");
+
+            // 2. POST /clientes.xhtml (Crear nuevo cliente)
+            String postData = "action=save&name=Queen+Industries&email=oliver@queen.org&company=Queen+Group&tier=PREMIUM&active=true";
+            HttpRequest reqPost = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + port + "/clientes.xhtml"))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(postData))
+                .build();
+            HttpResponse<String> resPost = client.send(reqPost, HttpResponse.BodyHandlers.ofString());
+
+            JettraAssert.assertEquals(302, resPost.statusCode(), "Guardar cliente debe responder con redirección 302");
+            String location = resPost.headers().firstValue("Location").orElse("");
+            JettraAssert.assertTrue(location.contains("/clientes.xhtml"), "Debe redirigir a /clientes.xhtml");
+
+            // 3. GET /clientes.xhtml para verificar la presencia del cliente creado
+            HttpResponse<String> resAfterCreate = client.send(reqGet, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertTrue(resAfterCreate.body().contains("Queen Industries"), "El cliente creado debe listarse en la tabla Faces");
+            JettraAssert.assertTrue(resAfterCreate.body().contains("oliver@queen.org"), "El email debe mostrarse en la tabla Faces");
+        } finally {
+            server.stop();
+        }
+    }
+
+    @Test
+    @DisplayName("17. Verificar interfaz CRUD Clientes en JettraFlux (/flux/customers)")
+    public void testClientesJettraFluxPage() throws Exception {
+        int port = TEST_PORT + 15;
+        JettraServer server = App.startApplication(port, StorageMode.JVM_RAM);
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + port + "/flux/customers"))
+                .GET()
+                .build();
+            HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+
+            JettraAssert.assertEquals(200, res.statusCode(), "/flux/customers debe responder HTTP 200");
+            JettraAssert.assertTrue(res.body().contains("flux-template-body"), "Debe utilizar la plantilla exclusiva FluxTemplateView");
+            JettraAssert.assertTrue(res.body().contains("Gestión de Clientes (MP-Rest Client + JWT)"), "Debe incluir el título exclusivo de clientes Flux");
+            JettraAssert.assertTrue(res.body().contains("Eclipse MicroProfile Rest Client"), "Debe incluir la mención de MicroProfile");
+            JettraAssert.assertTrue(res.body().contains("Acme Corporation"), "Debe listar los clientes sincronizados");
+            JettraAssert.assertTrue(res.body().contains("Stark Industries"), "Debe listar Stark Industries");
+            JettraAssert.assertTrue(res.body().contains("Wayne Enterprises"), "Debe listar Wayne Enterprises");
+            JettraAssert.assertTrue(res.body().contains("Guardar Cliente"), "Debe incluir el formulario de alta rápida de clientes");
+        } finally {
+            server.stop();
+        }
+    }
+
+    @Test
+    @DisplayName("18. Verificar interfaz CRUD Clientes en JettraAura con Diálogos AuraModal (/aura/customers)")
+    public void testClientesJettraAuraPage() throws Exception {
+        int port = TEST_PORT + 16;
+        JettraServer server = App.startApplication(port, StorageMode.JVM_RAM);
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+
+            // 1. GET /aura/customers
+            HttpRequest reqGet = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + port + "/aura/customers"))
+                .GET()
+                .build();
+            HttpResponse<String> resGet = client.send(reqGet, HttpResponse.BodyHandlers.ofString());
+
+            JettraAssert.assertEquals(200, resGet.statusCode(), "/aura/customers debe responder HTTP 200");
+            JettraAssert.assertTrue(resGet.body().contains("Gestión de Clientes"), "Debe incluir el título de clientes Aura");
+            JettraAssert.assertTrue(resGet.body().contains("Acme Corporation"), "Debe listar los registros en AuraListView");
+            JettraAssert.assertTrue(resGet.body().contains("registerCustomerModal"), "Debe contener el modal para registrar cliente");
+            JettraAssert.assertTrue(resGet.body().contains("editCustomerModal"), "Debe contener el modal para editar cliente");
+            JettraAssert.assertTrue(resGet.body().contains("deleteCustomerModal"), "Debe contener el modal para eliminar cliente");
+
+            // 2. Interacción AJAX Aura: Apertura del diálogo Modal para Registrar Cliente
+            String cookie = resGet.headers().firstValue("Set-Cookie").orElse("");
+            String openRegisterPayload = "aura:ajax=true&aura:target=customerForm:btnOpenRegisterModal&aura:event=click";
+            HttpRequest reqOpenRegister = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + port + "/aura/customers"))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .header("Cookie", cookie)
+                .POST(HttpRequest.BodyPublishers.ofString(openRegisterPayload))
+                .build();
+            HttpResponse<String> resOpenRegister = client.send(reqOpenRegister, HttpResponse.BodyHandlers.ofString());
+
+            JettraAssert.assertEquals(200, resOpenRegister.statusCode(), "Apertura modal AJAX debe responder HTTP 200");
+            JettraAssert.assertTrue(resOpenRegister.body().contains("registerCustomerModal"), "Debe responder con la actualización del modal");
+            JettraAssert.assertTrue(resOpenRegister.body().contains("display: flex;"), "El modal debe presentarse en estado visible (display: flex)");
+        } finally {
+            server.stop();
+        }
+    }
 }
+
 

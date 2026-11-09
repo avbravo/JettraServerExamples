@@ -191,6 +191,7 @@ public class FluxTemplateView extends FluxView {
         Widget headingFlux = Div.of(Text.of("⚡ Suite Ejemplos JettraFlux")).modifier(new Modifier().cssClass("flux-menu-heading"));
         Div navFlux = Div.of(
                 createNavLink("/flux/catalogo", "🛍️ Catálogo Reactivo (Flux)", isActive("catalogo-flux", "catalogo")),
+                createNavLink("/flux/customers", "👥 Clientes MP-Client (JWT)", isActive("customers", "clientes")),
                 createNavLink("/flux/metrics", "📊 Métricas del Servidor", isActive("metrics")),
                 createNavLink("/flux/health", "🩺 Estado de Salud (Health)", isActive("health")),
                 createNavLink("/flux/storage-monitor", "🚀 Monitor Almacenamiento", isActive("storage-monitor")),
@@ -204,6 +205,7 @@ public class FluxTemplateView extends FluxView {
         Div navFaces = Div.of(
                 createNavLink("/dashboard.xhtml", "📊 Dashboard Jakarta Faces", false),
                 createNavLink("/productos.xhtml", "📦 Catálogo JPA (.xhtml)", false),
+                createNavLink("/clientes.xhtml", "👥 Clientes Faces (PrimeFaces)", false),
                 createNavLink("/usuarios.xhtml", "👥 Usuarios Security", false)
         );
         navFaces.modifier(new Modifier().style("display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1.6rem;"));
@@ -213,6 +215,7 @@ public class FluxTemplateView extends FluxView {
         Div navAura = Div.of(
                 createNavLink("/aura/demo", "✨ Portal JettraAura", false),
                 createNavLink("/aura/catalogo", "📦 Catálogo Dinámico (Aura)", false),
+                createNavLink("/aura/customers", "👥 Clientes Aura (Modales)", false),
                 createNavLink("/aura/formulario", "📝 Formulario Reactivo (CPM)", false),
                 createNavLink("/aura/contador", "⚡ Contador AJAX Parcial", false)
         );
@@ -254,6 +257,7 @@ public class FluxTemplateView extends FluxView {
         // Barra de pestañas superiores del catálogo flux
         Div tabs = Div.of(
                 createTabLink("/flux/catalogo", "🛍️ " + Messages.get("flux.catalog.title"), isActive("catalogo-flux", "catalogo")),
+                createTabLink("/flux/customers", "👥 Clientes", isActive("customers", "clientes")),
                 createTabLink("/flux/metrics", "📊 Métricas", isActive("metrics")),
                 createTabLink("/flux/health", "🩺 Health", isActive("health")),
                 createTabLink("/flux/storage-monitor", "🚀 Storage", isActive("storage-monitor")),

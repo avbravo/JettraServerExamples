@@ -1,0 +1,167 @@
+<aura:extend>
+    <div aura:id="feedbackMessages"></div>
+
+    <!-- FORMULARIO DE ALTA RÁPIDA (MICROPROFILE REST CLIENT + JETTRA JWT) -->
+    <div class="ui-card" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
+                    <span class="badge" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-weight: 800; font-size: 0.72rem;">ECLIPSE MICROPROFILE REST CLIENT 3.0</span>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700; font-size: 0.72rem;">🔒 JETTRA JWT AUTH</span>
+                </div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 0;">Registrar Nuevo Cliente (BackEnd Microservice)</h3>
+                <span style="font-size: 0.82rem; color: var(--text-muted);">Alta rápida en línea o mediante diálogo modal reactivo JettraAura con comunicación REST autenticada</span>
+            </div>
+            <div>
+                <button type="button" aura:id="btnOpenRegisterModal" class="btn-action" style="background: #0d9488; font-size: 0.85rem;" title="Abrir diálogo modal de registro">➕ Diálogo de Registro</button>
+            </div>
+        </div>
+
+        <form aura:id="customerForm">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; align-items: end;">
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <label style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">Nombre Completo:</label>
+                    <input type="text" aura:id="name" placeholder="Ej. Cyberdyne Systems" required style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.65rem; outline: none;" />
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <label style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">Email Corporativo:</label>
+                    <input type="email" aura:id="email" placeholder="contacto@cyberdyne.ai" required style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.65rem; outline: none;" />
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <label style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">Empresa:</label>
+                    <input type="text" aura:id="company" placeholder="Cyberdyne AI Group" style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.65rem; outline: none;" />
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <label style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">Nivel (Tier):</label>
+                    <select aura:id="tier" style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.65rem; outline: none;">
+                        <option value="STANDARD">STANDARD</option>
+                        <option value="PREMIUM">PREMIUM</option>
+                        <option value="ENTERPRISE">ENTERPRISE</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" aura:id="btnSaveCustomer" class="btn-action" style="flex: 1; background: #0284c7;">💾 Guardar Cliente</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- TABLA DINÁMICA AJAX CON AURALISTVIEW -->
+    <div aura:id="customerTableContainer" class="ui-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 0;">Directorio de Clientes (AuraListView)</h3>
+                <span aura:id="customerCountBadge" class="badge" style="background: #1e3a8a; color: #93c5fd; font-weight: 700;">0 Clientes</span>
+            </div>
+            <div>
+                <button type="button" aura:id="btnOpenCreateModal" class="btn-action" style="background: #10b981; padding: 0.5rem 1rem; font-size: 0.85rem;">
+                    ➕ Registrar Nuevo Cliente (AuraModal)
+                </button>
+            </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="table-custom" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem 1rem;">ID</th>
+                        <th style="padding: 0.75rem 1rem;">Nombre del Cliente</th>
+                        <th style="padding: 0.75rem 1rem;">Email</th>
+                        <th style="padding: 0.75rem 1rem;">Empresa</th>
+                        <th style="padding: 0.75rem 1rem;">Nivel (Tier)</th>
+                        <th style="padding: 0.75rem 1rem;">Estado</th>
+                        <th style="padding: 0.75rem 1rem; text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr aura:id="customerRows" style="border-bottom: 1px solid var(--border-subtle);">
+                        <td style="padding: 0.85rem 1rem; font-weight: 800; color: var(--primary);"><span aura:id="id">#1</span></td>
+                        <td style="padding: 0.85rem 1rem; font-weight: 600;"><span aura:id="name">Acme Corp</span></td>
+                        <td style="padding: 0.85rem 1rem; color: var(--text-muted);"><span aura:id="email">info@acme.corp</span></td>
+                        <td style="padding: 0.85rem 1rem;"><span aura:id="company">Acme Global</span></td>
+                        <td style="padding: 0.85rem 1rem;">
+                            <span aura:id="tier" class="badge" style="background: rgba(148, 163, 184, 0.15); color: #cbd5e1; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.72rem; font-weight: 800;">STANDARD</span>
+                        </td>
+                        <td style="padding: 0.85rem 1rem; font-weight: 700; color: #10b981;"><span aura:id="active">● ACTIVO</span></td>
+                        <td style="padding: 0.85rem 1rem; text-align: center;">
+                            <button type="button" aura:id="btnOpenEdit" class="btn-action" style="background: #0284c7; padding: 0.3rem 0.65rem; font-size: 0.78rem; margin-right: 0.35rem;">✏️ Editar</button>
+                            <button type="button" aura:id="btnOpenDelete" class="btn-action" style="background: #dc2626; padding: 0.3rem 0.65rem; font-size: 0.78rem;">🗑️ Eliminar</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 1. DIÁLOGO MODAL: REGISTRAR CLIENTE (AuraModal) -->
+    <div aura:id="registerCustomerModal">
+        <form aura:id="registerModalForm" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Nombre Completo / Razón Social:</label>
+                <input type="text" aura:id="regName" placeholder="Ej. Stark Industries" required style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.65rem; outline: none;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Correo Electrónico:</label>
+                <input type="email" aura:id="regEmail" placeholder="tony@stark.tech" required style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.65rem; outline: none;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Empresa:</label>
+                <input type="text" aura:id="regCompany" placeholder="Stark Tech Holdings" style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.65rem; outline: none;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Nivel de Servicio (Tier):</label>
+                <select aura:id="regTier" style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.65rem; outline: none;">
+                    <option value="STANDARD">STANDARD</option>
+                    <option value="PREMIUM">PREMIUM</option>
+                    <option value="ENTERPRISE">ENTERPRISE</option>
+                </select>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.65rem; margin-top: 0.5rem;">
+                <button type="button" aura:id="btnCancelRegister" class="btn-action" style="background: var(--bg-subtle); color: var(--text-main); border: 1px solid var(--border-subtle);">Cancelar</button>
+                <button type="submit" aura:id="btnRegisterSave" class="btn-action" style="background: #10b981;">💾 Guardar Cliente</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 2. DIÁLOGO MODAL: EDITAR CLIENTE (AuraModal) -->
+    <div aura:id="editCustomerModal">
+        <form aura:id="editModalForm" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Nombre Completo:</label>
+                <input type="text" aura:id="editName" required style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.65rem; outline: none;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Correo Electrónico:</label>
+                <input type="email" aura:id="editEmail" required style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.65rem; outline: none;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Empresa:</label>
+                <input type="text" aura:id="editCompany" style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.65rem; outline: none;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Nivel (Tier):</label>
+                <select aura:id="editTier" style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); padding: 0.65rem; outline: none;">
+                    <option value="STANDARD">STANDARD</option>
+                    <option value="PREMIUM">PREMIUM</option>
+                    <option value="ENTERPRISE">ENTERPRISE</option>
+                </select>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.65rem; margin-top: 0.5rem;">
+                <button type="button" aura:id="btnCancelEdit" class="btn-action" style="background: var(--bg-subtle); color: var(--text-main); border: 1px solid var(--border-subtle);">Cancelar</button>
+                <button type="submit" aura:id="btnEditSave" class="btn-action" style="background: #0284c7;">💾 Actualizar Cambios</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 3. DIÁLOGO MODAL: CONFIRMAR ELIMINACIÓN (AuraModal) -->
+    <div aura:id="deleteCustomerModal">
+        <div style="padding: 0.5rem 0 1.25rem 0;">
+            <p aura:id="deleteCustomerMessage" style="font-size: 0.95rem; color: var(--text-main); line-height: 1.5; margin: 0;"></p>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.65rem;">
+            <button type="button" aura:id="btnCancelDelete" class="btn-action" style="background: var(--bg-subtle); color: var(--text-main); border: 1px solid var(--border-subtle);">Cancelar</button>
+            <button type="button" aura:id="btnConfirmDelete" class="btn-action" style="background: #dc2626;">🗑️ Sí, Eliminar</button>
+        </div>
+    </div>
+</aura:extend>
+

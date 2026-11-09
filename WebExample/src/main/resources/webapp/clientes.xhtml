@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:p="primefaces">
+
+<ui:composition template="template.xhtml">
+    <ui:define name="title">Gestión de Clientes - MicroProfile Rest Client</ui:define>
+
+    <ui:define name="center">
+        <!-- Encabezado con insignias de arquitectura MicroProfile y Jettra JWT -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
+                    <span style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 800;">ECLIPSE MICROPROFILE REST CLIENT 3.0</span>
+                    <span style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; padding: 0.2rem 0.55rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">🔒 JETTRA JWT AUTH</span>
+                </div>
+                <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0;">👥 Gestión de Clientes (BackEndExample)</h1>
+                <p style="color: var(--text-muted); margin: 0.25rem 0 0; font-size: 0.85rem;">Consumo seguro del microservicio de clientes en <code>#{customerBean.backendUrl}</code> con token Bearer autenticado.</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <p:commandButton value="➕ Registrar Cliente" icon="pi pi-plus" styleClass="ui-button-success"
+                                 actionListener="#{customerBean.openNew}" update=":dialogForm:customerDialogPanel"
+                                 onclick="PF('dlgCustomer').show();" type="button"/>
+            </div>
+        </div>
+
+        <!-- Mensajes de feedback -->
+        <p:messages id="messages" showDetail="true" closable="true"/>
+
+        <!-- Barra de herramientas y filtro -->
+        <h:form id="formFiltro" style="margin-bottom: 1rem;">
+            <div style="display: flex; gap: 0.75rem; align-items: center; background: var(--bg-card); padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--border-subtle);">
+                <span class="ui-input-icon-left" style="flex: 1;">
+                    <i class="pi pi-search"/>
+                    <p:inputText value="#{customerBean.filterTerm}" placeholder="Buscar cliente por nombre, email, empresa o nivel..." style="width: 100%;">
+                        <p:ajax event="keyup" update=":formClientes:dtClientes"/>
+                    </p:inputText>
+                </span>
+                <p:commandButton value="Refrescar" icon="pi pi-refresh" actionListener="#{customerBean.refreshList}"
+                                 update=":formClientes:dtClientes :messages" styleClass="ui-button-secondary"/>
+            </div>
+        </h:form>
+
+        <!-- Tabla interactiva PrimeFaces de Clientes -->
+        <h:form id="formClientes">
+            <p:dataTable id="dtClientes" var="cust" value="#{customerBean.filteredCustomers}"
+                         styleClass="ui-datatable-striped ui-datatable-hover" paginator="true" rows="10"
+                         emptyMessage="No se encontraron clientes registrados en el microservicio.">
+
+                <p:column headerText="ID" style="width: 60px; text-align: center;">
+                    <h:outputText value="##{cust.id}" style="font-weight: 700; color: var(--primary);"/>
+                </p:column>
+
+                <p:column headerText="Nombre de Cliente" sortBy="#{cust.name}">
+                    <span style="font-weight: 600; color: var(--text-main);">#{cust.name}</span>
+                </p:column>
+
+                <p:column headerText="Email" sortBy="#{cust.email}">
+                    <span style="color: var(--text-muted);">📧 #{cust.email}</span>
+                </p:column>
+
+                <p:column headerText="Empresa">
+                    <span>🏢 #{cust.company}</span>
+                </p:column>
+
+                <p:column headerText="Nivel (Tier)" style="width: 130px; text-align: center;">
+                    <span class="tier-badge tier-#{cust.tier.toLowerCase()}"
+                          style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.72rem; font-weight: 800; text-transform: uppercase;">
+                        #{cust.tier}
+                    </span>
+                </p:column>
+
+                <p:column headerText="Estado" style="width: 100px; text-align: center;">
+                    <span style="color: #{cust.active ? '#10b981' : '#ef4444'}; font-weight: 700;">
+                        #{cust.active ? '● ACTIVO' : '○ INACTIVO'}
+                    </span>
+                </p:column>
+
+                <p:column headerText="Acciones" style="width: 140px; text-align: center;">
+                    <p:commandButton icon="pi pi-pencil" title="Editar Cliente" styleClass="ui-button-sm ui-button-info"
+                                     actionListener="#{customerBean.edit(cust)}"
+                                     update=":dialogForm:customerDialogPanel"
+                                     onclick="PF('dlgCustomer').show();" style="margin-right: 0.35rem;"/>
+                    <p:commandButton icon="pi pi-trash" title="Eliminar Cliente" styleClass="ui-button-sm ui-button-danger"
+                                     actionListener="#{customerBean.delete(cust)}"
+                                     update=":formClientes:dtClientes :messages"/>
+                </p:column>
+            </p:dataTable>
+        </h:form>
+
+        <!-- Diálogo Modal para Registrar / Editar Cliente -->
+        <p:dialog header="Gestión de Cliente (MicroProfile REST)" widgetVar="dlgCustomer" modal="true"
+                  responsive="true" width="500" showEffect="fade" hideEffect="fade">
+            <h:form id="dialogForm">
+                <p:outputPanel id="customerDialogPanel" styleClass="ui-fluid">
+                    <div style="margin-bottom: 1rem;">
+                        <p:outputLabel for="name" value="Nombre Completo / Razón Social:"/>
+                        <p:inputText id="name" value="#{customerBean.customer.name}" required="true" placeholder="Ej. Cyberdyne Systems"/>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <p:outputLabel for="email" value="Correo Electrónico:"/>
+                        <p:inputText id="email" value="#{customerBean.customer.email}" required="true" placeholder="contacto@cyberdyne.ai"/>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <p:outputLabel for="company" value="Empresa / Grupo Corporativo:"/>
+                        <p:inputText id="company" value="#{customerBean.customer.company}" placeholder="Cyberdyne AI Group"/>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <p:outputLabel for="tier" value="Nivel de Servicio (Tier):"/>
+                        <p:selectOneMenu id="tier" value="#{customerBean.customer.tier}">
+                            <f:selectItem itemLabel="STANDARD" itemValue="STANDARD"/>
+                            <f:selectItem itemLabel="PREMIUM" itemValue="PREMIUM"/>
+                            <f:selectItem itemLabel="ENTERPRISE" itemValue="ENTERPRISE"/>
+                        </p:selectOneMenu>
+                    </div>
+                    <div style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <p:selectBooleanCheckbox id="active" value="#{customerBean.customer.active}"/>
+                        <p:outputLabel for="active" value="Cliente Activo en el Sistema"/>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                        <p:commandButton value="Cancelar" icon="pi pi-times" onclick="PF('dlgCustomer').hide();"
+                                         type="button" styleClass="ui-button-secondary"/>
+                        <p:commandButton value="Guardar Cliente" icon="pi pi-check" actionListener="#{customerBean.save}"
+                                         update=":formClientes:dtClientes :messages"
+                                         oncomplete="if (!args.validationFailed) PF('dlgCustomer').hide();"
+                                         styleClass="ui-button-primary"/>
+                    </div>
+                </p:outputPanel>
+            </h:form>
+        </p:dialog>
+    </ui:define>
+</ui:composition>
+</html>
+
