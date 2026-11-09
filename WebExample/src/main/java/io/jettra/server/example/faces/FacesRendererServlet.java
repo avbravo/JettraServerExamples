@@ -5,8 +5,12 @@ import io.jettra.server.core.storage.StorageMetrics;
 import io.jettra.server.example.bean.DashboardBean;
 import io.jettra.server.example.bean.LoginBean;
 import io.jettra.server.example.flux.CatalogoFlux;
+import io.jettra.server.example.flux.FluxTemplateView;
 import io.jettra.server.example.flux.HealthFluxView;
+import io.jettra.server.example.flux.InteractiveCounterFluxView;
 import io.jettra.server.example.flux.MetricsFluxView;
+import io.jettra.server.example.flux.StorageMonitorFluxView;
+import io.jettra.server.example.flux.TelemetryFluxView;
 import io.jettra.server.example.model.Product;
 import io.jettra.server.example.model.User;
 import io.jettra.server.example.service.ProductService;
@@ -356,57 +360,43 @@ public class FacesRendererServlet extends HttpServlet {
             case "telemetry" -> "Telemetría del Servidor - JettraFlux";
             case "counter" -> "Contador Reactivo - JettraFlux";
             case "catalogo-flux", "catalogo" -> Messages.get("flux.catalog.title") + " - JettraFlux";
-            default -> "Vista JettraFlux en Dashboard";
+            default -> "Vista JettraFlux";
         };
 
-        renderTemplate(out, title, user, activeStorage, viewName, () -> {
-            // Cabecera de la sección Center con selector de vistas
-            out.println("      <div style=\"display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;\">");
-            out.println("        <div>");
-            out.println("          <div style=\"display: flex; align-items: center; gap: 0.5rem;\">");
-            out.println("            <span style=\"background: var(--primary); color: white; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700;\">FLUX CENTER</span>");
-            out.println("            <h1 style=\"font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0;\">" + escapeHtml(title) + "</h1>");
-            out.println("          </div>");
-            out.println("          <p style=\"color: var(--text-muted); margin: 0.25rem 0 0 0;\">Componente JettraFlux ejecutándose directamente dentro de la sección central del Dashboard</p>");
-            out.println("        </div>");
-            out.println("        <div class=\"flux-tabs\">");
-            out.println("          <a href=\"/dashboard.xhtml\" class=\"tab-pill\">📊 General</a>");
-            out.println("          <a href=\"/flux/catalogo\" class=\"tab-pill " + (("catalogo-flux".equals(viewName) || "catalogo".equals(viewName)) ? "active" : "") + "\">🛍️ Catálogo Flux</a>");
-            out.println("          <a href=\"/dashboard.xhtml?view=metrics\" class=\"tab-pill " + ("metrics".equals(viewName) ? "active" : "") + "\">📊 Métricas</a>");
-            out.println("          <a href=\"/dashboard.xhtml?view=health\" class=\"tab-pill " + ("health".equals(viewName) ? "active" : "") + "\">🩺 Health</a>");
-            out.println("          <a href=\"/dashboard.xhtml?view=storage-monitor\" class=\"tab-pill " + ("storage-monitor".equals(viewName) ? "active" : "") + "\">🚀 Storage</a>");
-            out.println("          <a href=\"/dashboard.xhtml?view=telemetry\" class=\"tab-pill " + ("telemetry".equals(viewName) ? "active" : "") + "\">📈 Telemetría</a>");
-            out.println("          <a href=\"/dashboard.xhtml?view=counter\" class=\"tab-pill " + ("counter".equals(viewName) ? "active" : "") + "\">🎛️ Contador</a>");
-            out.println("        </div>");
-            out.println("      </div>");
+        io.jettra.flux.core.Widget contentWidget;
+        String extraHtml = null;
 
-            // Renderizado específico según la vista de Flux
-            out.println("      <div class=\"ui-card\" style=\"background: var(--bg-card); padding: 2rem; border-radius: 12px; border: 1px solid var(--border-subtle); box-shadow: var(--shadow-sm);\">");
+        if ("catalogo-flux".equals(viewName) || "catalogo".equals(viewName)) {
+            contentWidget = new CatalogoFlux(productService);
+            java.io.StringWriter sw = new java.io.StringWriter();
+            renderCatalogDialogsAndScript(new PrintWriter(sw), "/flux/catalogo");
+            extraHtml = sw.toString();
+        } else if ("metrics".equals(viewName)) {
+            contentWidget = new MetricsFluxView(server);
+        } else if ("health".equals(viewName)) {
+            contentWidget = new HealthFluxView(server);
+        } else if ("storage-monitor".equals(viewName)) {
+            String desc = (server != null && server.storage() != null && server.storage().getMode() != null)
+                    ? server.storage().getMode().getDescription()
+                    : "Memoria RAM Heap estándar";
+            contentWidget = new StorageMonitorFluxView(activeStorage, desc, server);
+        } else if ("telemetry".equals(viewName)) {
+            contentWidget = new TelemetryFluxView();
+        } else if ("counter".equals(viewName)) {
+            contentWidget = new InteractiveCounterFluxView();
+        } else {
+            contentWidget = new CatalogoFlux(productService);
+        }
 
-            if ("catalogo-flux".equals(viewName) || "catalogo".equals(viewName)) {
-                new CatalogoFlux(productService).renderSectionHtml(out);
-                renderCatalogDialogsAndScript(out, "/dashboard.xhtml?view=catalogo-flux");
-            } else if ("aura-catalogo".equals(viewName)) {
-                io.jettra.server.example.aura.AuraCatalogPage auraCatalog =
-                        io.jettra.aura.faces.AuraFacesBridge.resolvePage(req, io.jettra.server.example.aura.AuraCatalogPage.class);
-                auraCatalog.setProductService(productService);
-                out.println(io.jettra.aura.faces.AuraFacesBridge.renderSection(auraCatalog));
-            } else if ("metrics".equals(viewName)) {
-                new MetricsFluxView(server).renderSectionHtml(out);
-            } else if ("health".equals(viewName)) {
-                new HealthFluxView(server).renderSectionHtml(out);
-            } else if ("storage-monitor".equals(viewName)) {
-                renderFluxStorageMonitor(out, activeStorage);
-            } else if ("telemetry".equals(viewName)) {
-                renderFluxTelemetry(out);
-            } else if ("counter".equals(viewName)) {
-                renderFluxCounter(out);
-            } else {
-                out.println("        <p>Vista no encontrada. <a href=\"/dashboard.xhtml\" style=\"color: var(--primary);\">Volver al Dashboard</a></p>");
-            }
-
-            out.println("      </div>");
-        });
+        FluxTemplateView fluxTemplate = new FluxTemplateView(
+                title,
+                viewName,
+                activeStorage,
+                user,
+                contentWidget,
+                extraHtml
+        );
+        fluxTemplate.renderTo(out);
     }
 
     private void renderFluxStorageMonitor(PrintWriter out, String activeStorage) {

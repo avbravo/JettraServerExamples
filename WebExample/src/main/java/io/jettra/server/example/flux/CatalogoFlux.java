@@ -144,7 +144,7 @@ public class CatalogoFlux extends FluxView {
 
         Widget addForm = Form.of(
                 InputHidden.of("action", "save"),
-                InputHidden.of("returnTo", "/dashboard.xhtml?view=catalogo-flux"),
+                InputHidden.of("returnTo", "/flux/catalogo"),
                 fieldId,
                 fieldName,
                 fieldCategory,

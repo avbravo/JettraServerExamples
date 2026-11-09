@@ -10,6 +10,7 @@ import io.jettra.server.example.aura.AuraPortalPage;
 import io.jettra.server.example.aura.AuraUserFormPage;
 import io.jettra.server.example.faces.FacesRendererServlet;
 import io.jettra.server.example.flux.CatalogoFlux;
+import io.jettra.server.example.flux.FluxTemplateView;
 import io.jettra.server.example.flux.HealthFluxView;
 import io.jettra.server.example.flux.InteractiveCounterFluxView;
 import io.jettra.server.example.flux.MetricsFluxView;
@@ -105,16 +106,62 @@ public class App {
         jakarta.getRestDispatcher().registerResource(new ProductResource(productService));
         jakarta.getRestDispatcher().registerResource(new ServerInfoResource(server));
 
-        // 5. Conectar Módulo JettraFlux y Registrar Páginas Reactivas invocadas desde el menú
+        // 5. Conectar Módulo JettraFlux y Registrar Páginas Reactivas con su Plantilla Exclusiva (FluxTemplateView)
         FluxModule flux = FluxModule.attach(server);
-        flux.page("/flux/storage-monitor", "JettraFlux - Monitor de Almacenamiento", () -> 
-            new StorageMonitorFluxView(server.storage().getMode().name(), server.storage().getMode().getDescription())
+        flux.page("/flux/storage-monitor", "JettraFlux - Monitor de Almacenamiento", () ->
+            new FluxTemplateView(
+                "Monitor de Almacenamiento - JettraFlux",
+                "storage-monitor",
+                server,
+                null,
+                new StorageMonitorFluxView(server.storage().getMode().name(), server.storage().getMode().getDescription(), server)
+            )
         );
-        flux.page("/flux/telemetry", "JettraFlux - Telemetría del Servidor", TelemetryFluxView.class);
-        flux.page("/flux/counter", "JettraFlux - Contador Reactivo", InteractiveCounterFluxView.class);
-        flux.page("/flux/catalogo", "JettraFlux - Catálogo de Productos", () -> new CatalogoFlux(productService));
-        flux.page("/flux/metrics", "JettraFlux - Métricas del Servidor", () -> new MetricsFluxView(server));
-        flux.page("/flux/health", "JettraFlux - Estado de Salud (Health)", () -> new HealthFluxView(server));
+        flux.page("/flux/telemetry", "JettraFlux - Telemetría del Servidor", () ->
+            new FluxTemplateView(
+                "Telemetría del Servidor - JettraFlux",
+                "telemetry",
+                server,
+                null,
+                new TelemetryFluxView()
+            )
+        );
+        flux.page("/flux/counter", "JettraFlux - Contador Reactivo", () ->
+            new FluxTemplateView(
+                "Contador Reactivo - JettraFlux",
+                "counter",
+                server,
+                null,
+                new InteractiveCounterFluxView()
+            )
+        );
+        flux.page("/flux/catalogo", "JettraFlux - Catálogo de Productos", () ->
+            new FluxTemplateView(
+                "Catálogo Reactivo de Productos - JettraFlux",
+                "catalogo-flux",
+                server,
+                null,
+                new CatalogoFlux(productService)
+            )
+        );
+        flux.page("/flux/metrics", "JettraFlux - Métricas del Servidor", () ->
+            new FluxTemplateView(
+                "Métricas del Servidor - JettraFlux",
+                "metrics",
+                server,
+                null,
+                new MetricsFluxView(server)
+            )
+        );
+        flux.page("/flux/health", "JettraFlux - Estado de Salud (Health)", () ->
+            new FluxTemplateView(
+                "Estado de Salud (Health) - JettraFlux",
+                "health",
+                server,
+                null,
+                new HealthFluxView(server)
+            )
+        );
 
         // 6. Registrar Swagger-UI con Acreditación de Seguridad usando JettraFlux
         flux.swagger("/swagger-ui", "WebExample - Catálogo & Microservicios API", java.util.List.of(

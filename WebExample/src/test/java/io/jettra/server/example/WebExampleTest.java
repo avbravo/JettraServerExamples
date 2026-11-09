@@ -522,9 +522,54 @@ public class WebExampleTest {
                 .GET()
                 .build();
             HttpResponse<String> resAfterDelete = client.send(reqAfterDelete, HttpResponse.BodyHandlers.ofString());
+            // Verificar que el producto editado permanece y el eliminado ya no está
             JettraAssert.assertFalse(resAfterDelete.body().contains("Router JettraCore X1"), "El producto eliminado ya no debe aparecer en la tabla");
             JettraAssert.assertTrue(resAfterDelete.body().contains("Servidor JettraEdge 2U Pro"), "El producto editado debe permanecer en la tabla");
 
+        } finally {
+            server.stop();
+        }
+    }
+
+    @Test
+    @DisplayName("14. Verificar Plantilla Exclusiva JettraFlux (FluxTemplateView) independiente de Jakarta Faces y JettraAura")
+    public void testExclusiveJettraFluxTemplateIsolation() throws Exception {
+        int port = TEST_PORT + 13;
+        JettraServer server = App.startApplication(port, StorageMode.JVM_RAM);
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+
+            // 1. Verificar que los ejemplos de JettraFlux usan su propio template exclusivo (FluxTemplateView)
+            HttpRequest reqFlux = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + port + "/flux/catalogo"))
+                .GET()
+                .build();
+            HttpResponse<String> resFlux = client.send(reqFlux, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, resFlux.statusCode(), "/flux/catalogo debe responder HTTP 200");
+            JettraAssert.assertTrue(resFlux.body().contains("flux-template-body"), "Debe usar la clase exclusiva flux-template-body");
+            JettraAssert.assertTrue(resFlux.body().contains("JettraFlux Studio"), "Debe mostrar la cabecera exclusiva de JettraFlux Studio");
+            JettraAssert.assertTrue(resFlux.body().contains("JETTRAFLUX TEMPLATE"), "Debe incluir el indicador de plantilla exclusiva JettraFlux");
+            JettraAssert.assertFalse(resFlux.body().contains("PrimeFaces 14.0 Jakarta"), "No debe contener el pie de página de Jakarta Faces");
+
+            // 2. Verificar que Jakarta Faces (.xhtml) conserva su propio template sin verse afectado
+            HttpRequest reqFaces = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + port + "/dashboard.xhtml"))
+                .GET()
+                .build();
+            HttpResponse<String> resFaces = client.send(reqFaces, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, resFaces.statusCode(), "/dashboard.xhtml debe responder HTTP 200");
+            JettraAssert.assertTrue(resFaces.body().contains("PrimeFaces 14.0 Jakarta"), "Jakarta Faces debe mantener su propia plantilla");
+            JettraAssert.assertFalse(resFaces.body().contains("flux-template-body"), "Jakarta Faces no debe usar flux-template-body");
+
+            // 3. Verificar que JettraAura (/aura/*) conserva su propio template sin verse afectado
+            HttpRequest reqAura = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + port + "/aura/demo"))
+                .GET()
+                .build();
+            HttpResponse<String> resAura = client.send(reqAura, HttpResponse.BodyHandlers.ofString());
+            JettraAssert.assertEquals(200, resAura.statusCode(), "/aura/demo debe responder HTTP 200");
+            JettraAssert.assertTrue(resAura.body().contains("JettraAura Enterprise"), "JettraAura debe mantener su propia plantilla AuraTemplatePage");
+            JettraAssert.assertFalse(resAura.body().contains("flux-template-body"), "JettraAura no debe usar flux-template-body");
         } finally {
             server.stop();
         }
