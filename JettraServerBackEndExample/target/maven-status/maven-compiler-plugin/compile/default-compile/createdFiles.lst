@@ -1,8 +1,0 @@
-io/jettra/server/backend/service/OrderService.class
-io/jettra/server/backend/model/Order.class
-io/jettra/server/backend/App.class
-io/jettra/server/backend/service/CustomerService.class
-io/jettra/server/backend/rest/CustomerResource.class
-io/jettra/server/backend/rest/OrderResource.class
-io/jettra/server/backend/rest/SystemInfoResource.class
-io/jettra/server/backend/model/Customer.class
