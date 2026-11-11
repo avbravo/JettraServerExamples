@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.jettra.server.backend.JettraServerBackEndTest" time="0.186" tests="6" errors="0" skipped="0" failures="0">
+  <testcase name="JettraTestSuite" classname="io.jettra.server.backend.JettraServerBackEndTest" time="0.186"/>
+</testsuite>

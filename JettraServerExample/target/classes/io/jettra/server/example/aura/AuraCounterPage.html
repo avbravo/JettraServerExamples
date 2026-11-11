@@ -1,0 +1,25 @@
+<aura:extend>
+    <div class="ui-card" style="text-align: center; padding: 2.5rem 1.5rem;">
+        <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Contador AJAX JettraAura</h2>
+        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto 1.5rem auto; font-size: 0.95rem;">
+            Las pulsaciones en los botones ejecutan métodos Java en el servidor JettraServer y reemplazan
+            quirúrgicamente el valor en el DOM mediante <code>AuraAjaxRequestTarget</code> sin recargar la página.
+        </p>
+
+        <div style="font-size: 5rem; font-weight: 800; color: #38bdf8; margin: 1.5rem 0; letter-spacing: -0.03em;">
+            <span aura:id="counterValue">0</span>
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 2rem;">
+            <button type="button" aura:id="btnIncrement" class="btn-action" style="background: var(--success);">➕ Incrementar (+1)</button>
+            <button type="button" aura:id="btnDecrement" class="btn-action" style="background: var(--warning); color: #0f172a;">➖ Decrementar (-1)</button>
+            <button type="button" aura:id="btnDouble" class="btn-action" style="background: #8b5cf6;">✖️ Duplicar (x2)</button>
+            <button type="button" aura:id="btnReset" class="btn-action" style="background: var(--danger);">🔄 Resetear (0)</button>
+        </div>
+
+        <div style="background: var(--bg-body); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1.25rem; text-align: left; max-width: 600px; margin: 0 auto;">
+            <h4 style="color: #38bdf8; margin-bottom: 0.5rem; font-size: 0.95rem;">Última Operación Servidor (Loom Virtual Thread):</h4>
+            <div aura:id="logMessage" style="font-family: monospace; font-size: 0.9rem; color: #cbd5e1; background: #0b1120; padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-subtle);">Listo para procesar eventos AJAX.</div>
+        </div>
+    </div>
+</aura:extend>

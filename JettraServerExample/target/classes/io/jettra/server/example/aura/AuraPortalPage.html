@@ -1,0 +1,74 @@
+<aura:extend>
+    <section class="ui-card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-left: 4px solid #38bdf8; margin-bottom: 2rem;">
+        <h1 aura:id="welcomeTitle" style="font-size: 2rem; margin-bottom: 0.5rem; color: #38bdf8;">JettraAura: Arquitectura Web Orientada a Componentes</h1>
+        <p aura:id="welcomeDescription" style="color: var(--text-muted); font-size: 1.05rem; line-height: 1.6;">
+            Bienvenido a la suite de demostración interactiva de JettraAura con plantilla unificada.
+            Cada página HTML está vinculada 1:1 a una clase Java limpia y tipada, ejecutándose de manera nativa sobre Virtual Threads.
+        </p>
+    </section>
+
+    <!-- METRICS GRID -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+        <div class="ui-card" style="margin-bottom: 0;">
+            <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.35rem;">Modo Almacenamiento</div>
+            <div aura:id="storageModeValue" style="font-size: 1.8rem; font-weight: 700; color: #38bdf8;">JVM_RAM</div>
+            <div style="font-size: 0.8rem; color: var(--success); margin-top: 0.25rem;">● Sincronizado</div>
+        </div>
+        <div class="ui-card" style="margin-bottom: 0;">
+            <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.35rem;">Concurrencia</div>
+            <div style="font-size: 1.8rem; font-weight: 700; color: #a855f7;">Project Loom</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Virtual Threads Activos</div>
+        </div>
+        <div class="ui-card" style="margin-bottom: 0;">
+            <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.35rem;">Productos en JPA</div>
+            <div aura:id="totalProductsValue" style="font-size: 1.8rem; font-weight: 700; color: #10b981;">0</div>
+            <div style="font-size: 0.8rem; margin-top: 0.25rem;"><a href="/aura/catalogo" style="color: var(--primary); text-decoration: none;">Ver catálogo Aura →</a></div>
+        </div>
+        <div class="ui-card" style="margin-bottom: 0;">
+            <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.35rem;">Cores de CPU</div>
+            <div aura:id="cpuCoresValue" style="font-size: 1.8rem; font-weight: 700; color: #f59e0b;">0</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Procesadores Lógicos</div>
+        </div>
+    </div>
+
+    <!-- MODULES GRID -->
+    <h2 style="font-size: 1.3rem; margin-bottom: 1.25rem;">Módulos de Ejemplo Disponibles en la Plantilla</h2>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+        <div class="ui-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="font-size: 2rem; margin-bottom: 0.75rem;">📦</div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Catálogo con AuraListView</h3>
+                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">
+                    Renderizado iterativo de colecciones Java con <code>AuraListView</code> y <code>AuraListItem</code>.
+                    Clonación de marcado HTML por cada fila de la base de datos JPA y formulario de alta rápida.
+                </p>
+            </div>
+            <a href="/aura/catalogo" class="btn-action">Explorar Catálogo →</a>
+        </div>
+
+        <div class="ui-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="font-size: 2rem; margin-bottom: 0.75rem;">📝</div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Formularios y CompoundPropertyModel</h3>
+                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">
+                    Binding automático de POJOs por <code>aura:id</code> con <code>CompoundPropertyModel</code>,
+                    validación de datos, selectores desplegables y alertas automáticas mediante <code>AuraFeedbackPanel</code>.
+                </p>
+            </div>
+            <a href="/aura/formulario" class="btn-action">Ver Formulario →</a>
+        </div>
+
+        <div class="ui-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="font-size: 2rem; margin-bottom: 0.75rem;">⚡</div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Reactividad Parcial con AJAX</h3>
+                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">
+                    Actualizaciones quirúrgicas del DOM con <code>AuraAjaxButton</code> y <code>AuraAjaxRequestTarget</code>.
+                    Sin recargas de página completas ni librerías pesadas: micro-runtime JavaScript Vanilla ultra rápido.
+                </p>
+            </div>
+            <a href="/aura/contador" class="btn-action">Probar Contador AJAX →</a>
+        </div>
+    </div>
+</aura:extend>

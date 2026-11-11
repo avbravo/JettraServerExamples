@@ -1,0 +1,8 @@
+/home/avbravo/NetBeansProjects/jettrastack_local/JettraServerExamples/JettraServerBackEndExample/src/main/java/io/jettra/server/backend/App.java
+/home/avbravo/NetBeansProjects/jettrastack_local/JettraServerExamples/JettraServerBackEndExample/src/main/java/io/jettra/server/backend/model/Customer.java
+/home/avbravo/NetBeansProjects/jettrastack_local/JettraServerExamples/JettraServerBackEndExample/src/main/java/io/jettra/server/backend/model/Order.java
+/home/avbravo/NetBeansProjects/jettrastack_local/JettraServerExamples/JettraServerBackEndExample/src/main/java/io/jettra/server/backend/rest/CustomerResource.java
+/home/avbravo/NetBeansProjects/jettrastack_local/JettraServerExamples/JettraServerBackEndExample/src/main/java/io/jettra/server/backend/rest/OrderResource.java
+/home/avbravo/NetBeansProjects/jettrastack_local/JettraServerExamples/JettraServerBackEndExample/src/main/java/io/jettra/server/backend/rest/SystemInfoResource.java
+/home/avbravo/NetBeansProjects/jettrastack_local/JettraServerExamples/JettraServerBackEndExample/src/main/java/io/jettra/server/backend/service/CustomerService.java
+/home/avbravo/NetBeansProjects/jettrastack_local/JettraServerExamples/JettraServerBackEndExample/src/main/java/io/jettra/server/backend/service/OrderService.java

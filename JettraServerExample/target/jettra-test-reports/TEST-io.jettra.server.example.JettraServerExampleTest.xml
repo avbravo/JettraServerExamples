@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.jettra.server.example.JettraServerExampleTest" time="0.436" tests="12" errors="0" skipped="0" failures="1">
+  <testcase name="JettraTestSuite" classname="io.jettra.server.example.JettraServerExampleTest" time="0.436">
+    <failure message="Test execution failed">
+12. Verificar Suite JettraAura: Formulario con CompoundPropertyModel (/aura/formulario) y Contador AJAX (/aura/contador) failed: java.lang.AssertionError: El formulario de JettraAura debe responder HTTP 200 - Expected: &lt;200&gt; but was: &lt;500&gt;
+
+    </failure>
+  </testcase>
+</testsuite>
