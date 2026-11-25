@@ -1,4 +1,4 @@
 [
-  {"name":"idx_clientes_ruc","bucket":"Clientes","field":"ruc","type":"BTREE","unique":true,"entriesCount":0,"createdAt":1795576521757},
-  {"name":"idx_facturas_folio","bucket":"Facturas","field":"folio","type":"BTREE","unique":true,"entriesCount":0,"createdAt":1795576521763}
+  {"name":"idx_clientes_ruc","bucket":"Clientes","field":"ruc","type":"BTREE","unique":true,"entriesCount":2,"createdAt":1795615054475},
+  {"name":"idx_facturas_folio","bucket":"Facturas","field":"folio","type":"BTREE","unique":true,"entriesCount":1,"createdAt":1795615054477}
 ]

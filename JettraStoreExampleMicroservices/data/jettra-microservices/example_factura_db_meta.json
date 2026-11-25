@@ -1,10 +1,10 @@
 {
   "databaseName": "example_factura_db",
-  "savedAt": 1795576521774,
+  "savedAt": 1795615054517,
   "buckets": ["Clientes", "Facturas"],
   "documentEngines": {
     "Facturas": [
-      {"clienteId":"6b0652c91f7073ee81a2b5b80af71f76","fechaEmision":"2026-11-24","detalles":[{"sku":"SRV-JETTRA-01","descripcion":"Licencia JettraStore Cluster Enterprise","cantidad":1,"precioUnitario":1200.0,"subtotal":1200.0},{"sku":"SUP-24X7","descripcion":"Soporte 24x7 Clúster Raft","cantidad":2,"precioUnitario":150.0,"subtotal":300.0}],"subtotal":1500.0,"_id":"6b0652c91f7073ee816770e4b8f71f77","estado":"EMITIDA","total":1605.0,"folio":"FAC-2026-0001","impuesto":105.0,"clienteNombre":"Global Tech Panamá","jettraId":"6b0652c91f7073ee816770e4b8f71f77"}
+      {"clienteId":"6b0652c91f7073ee81a2b5b80af71f76","fechaEmision":"2026-11-24","detalles":[{"sku":"SRV-JETTRA-01","descripcion":"Licencia JettraStore Cluster Enterprise","cantidad":1,"precioUnitario":1200.0,"subtotal":1200.0},{"sku":"SUP-24X7","descripcion":"Soporte 24x7 Clúster Raft","cantidad":2,"precioUnitario":150.0,"subtotal":300.0}],"subtotal":1500.0,"jettraId":"6b0652c91f7073ee816770e4b8f71f77","estado":"EMITIDA","total":1605.0,"folio":"FAC-2026-0001","impuesto":105.0,"clienteNombre":"Global Tech Panamá","_id":"6b0652c91f7073ee816770e4b8f71f77"}
     ],
     "Clientes": [
       {"jettraId":"6b0652c91f7073ee81a2b5b80af71f76","email":"finanzas@globaltech.pa","activo":true,"categoria":"CORPORATIVO","ruc":"155992310-1-2026","nombre":"Global Tech Panamá","_id":"6b0652c91f7073ee81a2b5b80af71f76"},
