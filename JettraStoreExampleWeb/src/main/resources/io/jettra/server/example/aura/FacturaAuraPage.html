@@ -1,0 +1,109 @@
+<aura:extend>
+    <div aura:id="feedbackMessages"></div>
+
+    <div class="ui-card" style="margin-bottom: 1.5rem;">
+        <div style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem;">
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.25rem;">
+                <span class="badge" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-weight: 800; font-size: 0.72rem;">JETTRAAURA (ASTRA) + REST CLIENT</span>
+                <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700; font-size: 0.72rem;">🔒 JETTRA JWT BEARER</span>
+            </div>
+            <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 0;">🧾 Emitir Factura (example_factura_db)</h3>
+        </div>
+
+        <form aura:id="facturaForm">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.85rem; align-items: end;">
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Folio:</label>
+                    <input type="text" aura:id="folio" placeholder="FAC-2026-0002" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">ID Cliente:</label>
+                    <input type="text" aura:id="clienteId" required style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Nombre Cliente:</label>
+                    <input type="text" aura:id="clienteNombre" required style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Descripción Ítem:</label>
+                    <input type="text" aura:id="descripcion" required style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Cantidad:</label>
+                    <input type="text" aura:id="cantidad" required style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Precio ($):</label>
+                    <input type="text" aura:id="precio" required style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+                </div>
+                <div>
+                    <button type="submit" aura:id="btnEmitirFactura" class="btn-action" style="width:100%; background:#0284c7;">💾 Emitir Factura</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div aura:id="facturaTableContainer" class="ui-card">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0;">Facturas Registradas (AuraListView)</h3>
+            <span aura:id="facturaCountBadge" class="badge" style="background: #1e3a8a; color: #93c5fd; font-weight: 700;">0 Facturas</span>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="table-custom" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase;">
+                        <th style="padding: 0.7rem;">Folio</th>
+                        <th style="padding: 0.7rem;">Cliente</th>
+                        <th style="padding: 0.7rem;">Fecha</th>
+                        <th style="padding: 0.7rem;">Estado</th>
+                        <th style="padding: 0.7rem;">Total</th>
+                        <th style="padding: 0.7rem; text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr aura:id="facturaRows" style="border-bottom: 1px solid var(--border-subtle);">
+                        <td style="padding: 0.75rem; font-weight: 800; color: var(--primary);"><span aura:id="folio">FAC-2026-0001</span></td>
+                        <td style="padding: 0.75rem;"><span aura:id="cliente">Acme</span></td>
+                        <td style="padding: 0.75rem; color: var(--text-muted);"><span aura:id="fecha">2026-11-24</span></td>
+                        <td style="padding: 0.75rem; font-weight: 700;"><span aura:id="estado">EMITIDA</span></td>
+                        <td style="padding: 0.75rem; font-weight: 700;"><span aura:id="total">$0.00</span></td>
+                        <td style="padding: 0.75rem; text-align: center;">
+                            <button type="button" aura:id="btnEditFactura" class="btn-action" style="background:#0284c7; padding:0.28rem 0.6rem; font-size:0.78rem; margin-right:0.25rem;">✏️ Editar</button>
+                            <button type="button" aura:id="btnAnularFactura" class="btn-action" style="background:#d97706; padding:0.28rem 0.6rem; font-size:0.78rem; margin-right:0.25rem;">Anular</button>
+                            <button type="button" aura:id="btnDeleteFactura" class="btn-action" style="background:#dc2626; padding:0.28rem 0.6rem; font-size:0.78rem;">🗑️ Eliminar</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div aura:id="editFacturaModal">
+        <form aura:id="editFacturaForm" style="display:flex; flex-direction:column; gap:0.85rem;">
+            <div>
+                <label style="font-size:0.82rem; color:var(--text-muted);">Folio:</label>
+                <input type="text" aura:id="editFolio" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+            </div>
+            <div>
+                <label style="font-size:0.82rem; color:var(--text-muted);">Nombre Cliente:</label>
+                <input type="text" aura:id="editClienteNombre" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+            </div>
+            <div>
+                <label style="font-size:0.82rem; color:var(--text-muted);">Estado:</label>
+                <input type="text" aura:id="editEstado" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:0.6rem;">
+                <button type="button" aura:id="btnCancelEditFactura" class="btn-action" style="background:var(--bg-subtle); color:var(--text-main);">Cancelar</button>
+                <button type="submit" aura:id="btnSaveEditFactura" class="btn-action" style="background:#0284c7;">💾 Actualizar</button>
+            </div>
+        </form>
+    </div>
+
+    <div aura:id="deleteFacturaModal">
+        <p aura:id="deleteFacturaMessage" style="margin:0 0 1rem; color:var(--text-main);"></p>
+        <div style="display:flex; justify-content:flex-end; gap:0.6rem;">
+            <button type="button" aura:id="btnCancelDeleteFactura" class="btn-action" style="background:var(--bg-subtle); color:var(--text-main);">Cancelar</button>
+            <button type="button" aura:id="btnConfirmDeleteFactura" class="btn-action" style="background:#dc2626;">🗑️ Confirmar</button>
+        </div>
+    </div>
+</aura:extend>

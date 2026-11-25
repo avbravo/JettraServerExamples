@@ -1,0 +1,90 @@
+<aura:extend>
+    <div aura:id="feedbackMessages"></div>
+
+    <div class="ui-card" style="margin-bottom: 1.5rem;">
+        <div style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem;">
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.25rem;">
+                <span class="badge" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-weight: 800; font-size: 0.72rem;">JETTRAAURA (ASTRA) + @RESTREPOSITORY</span>
+                <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700; font-size: 0.72rem;">🔒 JETTRA JWT BEARER</span>
+            </div>
+            <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 0;">👥 Clientes (example_factura_db)</h3>
+        </div>
+
+        <form aura:id="clienteMsForm">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.85rem; align-items: end;">
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">RUC:</label>
+                    <input type="text" aura:id="ruc" placeholder="155678901-2-2026" required style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Nombre:</label>
+                    <input type="text" aura:id="nombre" placeholder="Acme Corporation S.A." required style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Email:</label>
+                    <input type="email" aura:id="email" placeholder="billing@acme.io" required style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Categoría:</label>
+                    <input type="text" aura:id="categoria" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+                </div>
+                <div>
+                    <button type="submit" aura:id="btnSaveClienteMs" class="btn-action" style="width:100%; background:#0284c7;">💾 Guardar Cliente</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div aura:id="clienteMsTableContainer" class="ui-card">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0;">Clientes Registrados (AuraListView)</h3>
+            <span aura:id="clienteMsCountBadge" class="badge" style="background: #1e3a8a; color: #93c5fd; font-weight: 700;">0 Clientes</span>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="table-custom" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase;">
+                        <th style="padding: 0.7rem;">RUC</th>
+                        <th style="padding: 0.7rem;">Nombre</th>
+                        <th style="padding: 0.7rem;">Email</th>
+                        <th style="padding: 0.7rem;">Categoría</th>
+                        <th style="padding: 0.7rem; text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr aura:id="clienteMsRows" style="border-bottom: 1px solid var(--border-subtle);">
+                        <td style="padding: 0.75rem; font-weight: 800; color: var(--primary);"><span aura:id="ruc">155678901</span></td>
+                        <td style="padding: 0.75rem; font-weight: 600;"><span aura:id="nombre">Acme</span></td>
+                        <td style="padding: 0.75rem; color: var(--text-muted);"><span aura:id="email">billing@acme.io</span></td>
+                        <td style="padding: 0.75rem;"><span aura:id="categoria">ENTERPRISE</span></td>
+                        <td style="padding: 0.75rem; text-align: center;">
+                            <button type="button" aura:id="btnEditClienteMs" class="btn-action" style="background:#0284c7; padding:0.28rem 0.6rem; font-size:0.78rem; margin-right:0.25rem;">✏️ Editar</button>
+                            <button type="button" aura:id="btnDeleteClienteMs" class="btn-action" style="background:#dc2626; padding:0.28rem 0.6rem; font-size:0.78rem;">🗑️ Eliminar</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div aura:id="editClienteMsModal">
+        <form aura:id="editClienteMsForm" style="display:flex; flex-direction:column; gap:0.85rem;">
+            <input type="text" aura:id="editRuc" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+            <input type="text" aura:id="editNombre" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+            <input type="email" aura:id="editEmail" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+            <input type="text" aura:id="editCategoria" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-main); padding:0.55rem;" />
+            <div style="display:flex; justify-content:flex-end; gap:0.6rem;">
+                <button type="button" aura:id="btnCancelEditClienteMs" class="btn-action" style="background:var(--bg-subtle); color:var(--text-main);">Cancelar</button>
+                <button type="submit" aura:id="btnSaveEditClienteMs" class="btn-action" style="background:#0284c7;">💾 Actualizar</button>
+            </div>
+        </form>
+    </div>
+
+    <div aura:id="deleteClienteMsModal">
+        <p aura:id="deleteClienteMsMessage" style="margin:0 0 1rem; color:var(--text-main);"></p>
+        <div style="display:flex; justify-content:flex-end; gap:0.6rem;">
+            <button type="button" aura:id="btnCancelDeleteClienteMs" class="btn-action" style="background:var(--bg-subtle); color:var(--text-main);">Cancelar</button>
+            <button type="button" aura:id="btnConfirmDeleteClienteMs" class="btn-action" style="background:#dc2626;">🗑️ Confirmar</button>
+        </div>
+    </div>
+</aura:extend>

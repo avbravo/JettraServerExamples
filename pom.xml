@@ -17,9 +17,9 @@
     <description>Módulo agregador de proyectos y microservicios de ejemplo para JettraServer</description>
 
     <modules>
-        <module>WebExample</module>
         <module>JettraStoreExampleMicroservices</module>
         <module>ettraStoreExampleSE</module>
+        <module>JettraStoreExampleWeb</module>
     </modules>
 </project>
 
