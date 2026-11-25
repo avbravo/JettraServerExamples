@@ -19,6 +19,7 @@
     <modules>
         <module>WebExample</module>
         <module>BackEndExample</module>
+        <module>ettraStoreExampleSE</module>
     </modules>
 </project>
 
