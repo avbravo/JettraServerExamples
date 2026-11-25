@@ -1,0 +1,37 @@
+# ==============================================================================
+# JettraStoreExampleMicroservices - Java 25+ & Project Loom
+# Microservicios de facturación sobre example_factura_db con JettraStoreDriver
+# ==============================================================================
+FROM bellsoft/liberica-runtime-container:jre-25-stream-musl
+LABEL maintainer="Jettra Ecosystem <dev@jettra.io>"
+LABEL description="JettraStoreExampleMicroservices - Microservicios de Facturación sobre JettraStore"
+
+RUN if command -v apk > /dev/null; then \
+        apk add --no-cache curl ca-certificates tzdata && rm -rf /var/cache/apk/*; \
+    elif command -v apt-get > /dev/null; then \
+        apt-get update && apt-get install -y --no-install-recommends curl ca-certificates tzdata && rm -rf /var/lib/apt/lists/*; \
+    fi
+
+WORKDIR /app
+
+RUN mkdir -p /app/data /app/config && chown -R 1000:1000 /app
+
+COPY target/JettraStoreExampleMicroservices-*-uber.jar /app/app.jar
+COPY src/main/resources/META-INF/microprofile-config.properties /app/config/microprofile-config.properties
+COPY src/main/resources/cluster.config /app/config/cluster.config
+
+ENV SERVER_PORT=8083 \
+    SERVER_HOST=0.0.0.0 \
+    CLUSTER_CONFIG_PATH=/app/config/cluster.config \
+    JETTRA_STORAGE_MODE=JVM_RAM \
+    JETTRA_SERVER_DATA_DIR=/app/data \
+    JAVA_OPTS="--enable-preview --enable-native-access=ALL-UNNAMED -XX:+UnlockExperimentalVMOptions -XX:+UseCompactObjectHeaders -XX:+UseContainerSupport -Xms128m -Xmx512m"
+
+EXPOSE 8083
+
+HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8083/api/v1/system/ping || exit 1
+
+USER 1000:1000
+
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Dcluster.config.path=$CLUSTER_CONFIG_PATH -jar /app/app.jar"]

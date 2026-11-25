@@ -8,7 +8,7 @@
         <groupId>io.jettra</groupId>
         <artifactId>JettraServer</artifactId>
         <version>1.0.0-SNAPSHOT</version>
-        <relativePath>../jettraserver/pom.xml</relativePath>
+        <relativePath>../JettraServer/pom.xml</relativePath>
     </parent>
 
     <artifactId>JettraServerExamples</artifactId>
@@ -18,7 +18,7 @@
 
     <modules>
         <module>WebExample</module>
-        <module>BackEndExample</module>
+        <module>JettraStoreExampleMicroservices</module>
         <module>ettraStoreExampleSE</module>
     </modules>
 </project>

@@ -1,0 +1,29 @@
+services:
+  jettra-microservices:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: jettra/jettrastore-example-microservices:1.0.0
+    container_name: jettrastore-example-microservices
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVER_PORT=8083
+      - SERVER_HOST=0.0.0.0
+      - CLUSTER_CONFIG_PATH=/app/config/cluster.config
+      - JETTRA_STORAGE_MODE=JVM_RAM
+      - JETTRA_SERVER_DATA_DIR=/app/data
+      - JAVA_OPTS=--enable-preview --enable-native-access=ALL-UNNAMED -XX:+UnlockExperimentalVMOptions -XX:+UseCompactObjectHeaders -XX:+UseContainerSupport -Xms128m -Xmx512m
+    volumes:
+      - jettra_microservices_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/api/v1/system/ping"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  jettra_microservices_data:
+    driver: local
