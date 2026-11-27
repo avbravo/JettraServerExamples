@@ -51,18 +51,10 @@ public class JettraJwtAuthManager {
     }
 
     /**
-     * Invalida el token actual y solicita uno nuevo al microservicio (útil ante respuestas 401/403).
-     */
-    public synchronized String refreshBearerToken() {
-        cachedToken.set(null);
-        return getBearerToken();
-    }
-
-    /**
-     * Intenta autenticarse contra el endpoint público /api/auth/login de JettraStoreExampleMicroservices.
+     * Intenta autenticarse contra el endpoint público /api/auth/login de BackEndExample.
      */
     private String acquireTokenFromBackend() {
-        String backendUrl = resolveConfig("backend.api.url", "http://localhost:8083");
+        String backendUrl = resolveConfig("backend.api.url", "http://localhost:8081");
         String username = resolveConfig("backend.auth.username", "admin");
         String password = resolveConfig("backend.auth.password", "admin");
 
@@ -128,14 +120,11 @@ public class JettraJwtAuthManager {
     }
 
     private String resolveConfig(String key, String defaultValue) {
-        String sysProp = System.getProperty(key);
-        if (sysProp != null && !sysProp.isBlank()) {
-            return sysProp.trim();
-        }
         try {
             return ConfigProvider.getConfig().getOptionalValue(key, String.class).orElse(defaultValue);
         } catch (Exception e) {
-            return defaultValue;
+            String prop = System.getProperty(key);
+            return (prop != null && !prop.isBlank()) ? prop.trim() : defaultValue;
         }
     }
 }

@@ -192,8 +192,6 @@ public class FluxTemplateView extends FluxView {
         Div navFlux = Div.of(
                 createNavLink("/flux/catalogo", "🛍️ Catálogo Reactivo (Flux)", isActive("catalogo-flux", "catalogo")),
                 createNavLink("/flux/customers", "👥 Clientes MP-Client (JWT)", isActive("customers", "clientes")),
-                createNavLink("/flux/facturas", "🧾 Facturas CRUD (Flux)", isActive("facturas")),
-                createNavLink("/flux/clientes-ms", "👥 Clientes @RestRepository (Flux)", isActive("clientes-ms")),
                 createNavLink("/flux/metrics", "📊 Métricas del Servidor", isActive("metrics")),
                 createNavLink("/flux/health", "🩺 Estado de Salud (Health)", isActive("health")),
                 createNavLink("/flux/storage-monitor", "🚀 Monitor Almacenamiento", isActive("storage-monitor")),

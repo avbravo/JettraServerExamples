@@ -8,28 +8,19 @@ import io.jettra.server.example.aura.AuraCatalogPage;
 import io.jettra.server.example.aura.AuraCounterPage;
 import io.jettra.server.example.aura.AuraPortalPage;
 import io.jettra.server.example.aura.AuraUserFormPage;
-import io.jettra.server.example.aura.ClienteMicroserviceAuraPage;
 import io.jettra.server.example.aura.CustomerAuraPage;
-import io.jettra.server.example.aura.FacturaAuraPage;
 import io.jettra.server.example.faces.FacesRendererServlet;
 import io.jettra.server.example.flux.CatalogoFlux;
-import io.jettra.server.example.flux.ClienteMicroserviceFluxView;
 import io.jettra.server.example.flux.CustomerFluxView;
-import io.jettra.server.example.flux.FacturaFluxView;
 import io.jettra.server.example.flux.FluxTemplateView;
 import io.jettra.server.example.flux.HealthFluxView;
 import io.jettra.server.example.flux.InteractiveCounterFluxView;
 import io.jettra.server.example.flux.MetricsFluxView;
 import io.jettra.server.example.flux.StorageMonitorFluxView;
 import io.jettra.server.example.flux.TelemetryFluxView;
-import io.jettra.server.example.model.ClienteDto;
-import io.jettra.server.example.model.DetalleFacturaDto;
-import io.jettra.server.example.model.FacturaDto;
 import io.jettra.server.example.rest.ProductResource;
 import io.jettra.server.example.rest.ServerInfoResource;
-import io.jettra.server.example.service.ClienteMicroserviceClientService;
 import io.jettra.server.example.service.CustomerClientService;
-import io.jettra.server.example.service.FacturaClientService;
 import io.jettra.server.example.service.ProductService;
 import io.jettra.server.example.service.SecurityService;
 import io.jettra.server.flux.FluxModule;
@@ -99,12 +90,6 @@ public class App {
         CustomerClientService customerService = new CustomerClientService();
         jakarta.getCdiContainer().registerSingleton(CustomerClientService.class, customerService);
 
-        ClienteMicroserviceClientService clienteMsService = new ClienteMicroserviceClientService();
-        jakarta.getCdiContainer().registerSingleton(ClienteMicroserviceClientService.class, clienteMsService);
-
-        FacturaClientService facturaService = new FacturaClientService();
-        jakarta.getCdiContainer().registerSingleton(FacturaClientService.class, facturaService);
-
         // 3. Registrar Servlet de PrimeFaces / Jakarta Faces (Login y Dashboard con plantilla)
         FacesRendererServlet facesServlet = new FacesRendererServlet(
             jakarta.getCdiContainer(), securityService, productService, customerService, server
@@ -117,8 +102,6 @@ public class App {
         jakarta.getServletBridge().registerServlet("/clientes", facesServlet);
         jakarta.getServletBridge().registerServlet("/customers.xhtml", facesServlet);
         jakarta.getServletBridge().registerServlet("/customers", facesServlet);
-        jakarta.getServletBridge().registerServlet("/facturas.xhtml", facesServlet);
-        jakarta.getServletBridge().registerServlet("/facturas", facesServlet);
         jakarta.getServletBridge().registerServlet("/usuarios.xhtml", facesServlet);
         jakarta.getServletBridge().registerServlet("/flux/storage-monitor", facesServlet);
         jakarta.getServletBridge().registerServlet("/flux/telemetry", facesServlet);
@@ -207,73 +190,6 @@ public class App {
                 new HealthFluxView(server)
             )
         );
-        // Rutas JettraFlux CRUD para Facturas y Clientes (example_factura_db via RestClient + JWT)
-        server.get("/flux/facturas", (req, res) -> {
-            String editId = req.getQueryParam("edit");
-            String confirmDel = req.getQueryParam("confirm_delete");
-            String msg = req.getQueryParam("msg");
-            FluxTemplateView tpl = new FluxTemplateView(
-                "Facturación (example_factura_db) - JettraFlux",
-                "facturas",
-                server,
-                null,
-                new FacturaFluxView(facturaService, editId, confirmDel, msg)
-            );
-            res.html(new io.jettra.server.flux.FluxRenderer().render(tpl.build(), "Facturación - JettraFlux"));
-        });
-        server.post("/flux/facturas", (req, res) -> {
-            var form = parseForm(req.getBodyAsString());
-            String action = form.getOrDefault("action", "create");
-            String id = form.get("id");
-            if ("delete".equalsIgnoreCase(action) && id != null && !id.isBlank()) {
-                facturaService.delete(id);
-            } else if ("anular".equalsIgnoreCase(action) && id != null && !id.isBlank()) {
-                facturaService.anular(id);
-            } else {
-                int qty = parseIntSafe(form.get("cantidad"), 1);
-                double price = parseDoubleSafe(form.get("precio"), 100.0);
-                DetalleFacturaDto det = DetalleFacturaDto.of("SRV-FLUX", form.getOrDefault("descripcion", "Servicio"), qty, price);
-                FacturaDto dto = new FacturaDto(id, form.getOrDefault("folio", ""), form.getOrDefault("clienteId", "CLI-001"),
-                        form.getOrDefault("clienteNombre", "Cliente"), java.time.LocalDate.now().toString(),
-                        "EMITIDA", java.util.List.of(det), det.subtotal(), 0.0, 0.0);
-                if ("update".equalsIgnoreCase(action) && id != null && !id.isBlank()) {
-                    facturaService.update(id, dto);
-                } else {
-                    facturaService.create(dto);
-                }
-            }
-            res.header("Location", "/flux/facturas").status(302).body("");
-        });
-        server.get("/flux/clientes-ms", (req, res) -> {
-            String editId = req.getQueryParam("edit");
-            String confirmDel = req.getQueryParam("confirm_delete");
-            String msg = req.getQueryParam("msg");
-            FluxTemplateView tpl = new FluxTemplateView(
-                "Clientes (example_factura_db) - JettraFlux",
-                "clientes-ms",
-                server,
-                null,
-                new ClienteMicroserviceFluxView(clienteMsService, editId, confirmDel, msg)
-            );
-            res.html(new io.jettra.server.flux.FluxRenderer().render(tpl.build(), "Clientes - JettraFlux"));
-        });
-        server.post("/flux/clientes-ms", (req, res) -> {
-            var form = parseForm(req.getBodyAsString());
-            String action = form.getOrDefault("action", "create");
-            String id = form.get("id");
-            if ("delete".equalsIgnoreCase(action) && id != null && !id.isBlank()) {
-                clienteMsService.delete(id);
-            } else {
-                ClienteDto dto = new ClienteDto(id, form.getOrDefault("ruc", ""), form.getOrDefault("nombre", ""),
-                        form.getOrDefault("email", ""), form.getOrDefault("categoria", "ENTERPRISE"), true);
-                if ("update".equalsIgnoreCase(action) && id != null && !id.isBlank()) {
-                    clienteMsService.update(id, dto);
-                } else {
-                    clienteMsService.create(dto);
-                }
-            }
-            res.header("Location", "/flux/clientes-ms").status(302).body("");
-        });
 
         // 6. Registrar Swagger-UI con Acreditación de Seguridad usando JettraFlux
         flux.swagger("/swagger-ui", "WebExample - Catálogo & Microservicios API", java.util.List.of(
@@ -294,8 +210,6 @@ public class App {
         aura.page("/aura/catalogo", AuraCatalogPage.class);
         aura.page("/aura/customers", CustomerAuraPage.class);
         aura.page("/aura/clientes", CustomerAuraPage.class);
-        aura.page("/aura/clientes-ms", ClienteMicroserviceAuraPage.class);
-        aura.page("/aura/facturas", FacturaAuraPage.class);
         aura.page("/aura/formulario", AuraUserFormPage.class);
         aura.page("/aura/contador", AuraCounterPage.class);
 
@@ -335,27 +249,5 @@ public class App {
         System.out.println("==================================================================================");
 
         return server;
-    }
-
-    private static java.util.Map<String, String> parseForm(String body) {
-        java.util.Map<String, String> map = new java.util.LinkedHashMap<>();
-        if (body == null || body.isBlank()) return map;
-        for (String pair : body.split("&")) {
-            int eq = pair.indexOf('=');
-            if (eq > 0) {
-                String k = java.net.URLDecoder.decode(pair.substring(0, eq), java.nio.charset.StandardCharsets.UTF_8);
-                String v = java.net.URLDecoder.decode(pair.substring(eq + 1), java.nio.charset.StandardCharsets.UTF_8);
-                map.put(k, v);
-            }
-        }
-        return map;
-    }
-
-    private static int parseIntSafe(String s, int def) {
-        try { return s != null ? Integer.parseInt(s.trim()) : def; } catch (Exception e) { return def; }
-    }
-
-    private static double parseDoubleSafe(String s, double def) {
-        try { return s != null ? Double.parseDouble(s.trim()) : def; } catch (Exception e) { return def; }
     }
 }

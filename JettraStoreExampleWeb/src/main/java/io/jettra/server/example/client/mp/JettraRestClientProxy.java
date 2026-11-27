@@ -150,26 +150,10 @@ public class JettraRestClientProxy implements InvocationHandler {
         }
         reqBuilder.method(httpMethod, bodyPublisher);
 
-        // 7. Ejecución con HttpClient de Java 25 y renovación automática de JWT ante 401
+        // 7. Ejecución con HttpClient de Java 25
         HttpResponse<String> response;
         try {
             response = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() == 401) {
-                String refreshed = JettraJwtAuthManager.getInstance().refreshBearerToken();
-                if (refreshed != null && !refreshed.isBlank()) {
-                    HttpRequest.Builder retryBuilder = HttpRequest.newBuilder()
-                            .uri(URI.create(fullPath))
-                            .timeout(Duration.ofMillis(timeoutMillis));
-                    headerParams.put("Authorization", refreshed);
-                    for (Map.Entry<String, String> h : headerParams.entrySet()) {
-                        retryBuilder.header(h.getKey(), h.getValue());
-                    }
-                    retryBuilder.method(httpMethod, bodyEntity != null
-                            ? HttpRequest.BodyPublishers.ofString(json.toJson(bodyEntity))
-                            : HttpRequest.BodyPublishers.noBody());
-                    response = httpClient.send(retryBuilder.build(), HttpResponse.BodyHandlers.ofString());
-                }
-            }
         } catch (Exception e) {
             throw new WebApplicationException("Error de comunicación HTTP con endpoint " + fullPath + ": " + e.getMessage(), e, 503);
         }
@@ -191,66 +175,10 @@ public class JettraRestClientProxy implements InvocationHandler {
         }
 
         Type genericType = method.getGenericReturnType();
-        Object deserialized = null;
-        if (java.util.List.class.isAssignableFrom(returnType)) {
-            deserialized = json.fromJson(body, java.util.List.class);
-        } else {
-            try {
-                deserialized = json.fromJson(body, genericType);
-            } catch (Exception e) {
-                deserialized = json.fromJson(body, returnType);
-            }
-            if (deserialized == null && returnType != void.class && returnType != Void.class) {
-                deserialized = tryFromMap(body, returnType);
-            }
-        }
-        if (deserialized instanceof java.util.List<?> rawList
-                && genericType instanceof java.lang.reflect.ParameterizedType pt
-                && pt.getActualTypeArguments().length == 1
-                && pt.getActualTypeArguments()[0] instanceof Class<?> elemClass
-                && elemClass != Object.class
-                && !java.util.Map.class.isAssignableFrom(elemClass)) {
-            java.util.List<Object> typedList = new java.util.ArrayList<>(rawList.size());
-            for (Object item : rawList) {
-                if (item == null || elemClass.isInstance(item)) {
-                    typedList.add(item);
-                } else if (item instanceof io.jettra.json.JsonObject jo) {
-                    Object converted = invokeFromMap(jo.getMap(), elemClass);
-                    typedList.add(converted != null ? converted : json.fromJson(jo.toString(), elemClass));
-                } else if (item instanceof java.util.Map<?, ?> mapItem) {
-                    Object converted = invokeFromMap(mapItem, elemClass);
-                    typedList.add(converted != null ? converted : json.fromJson(json.toJson(item), elemClass));
-                } else {
-                    String itemJson = json.toJson(item);
-                    Object converted = json.fromJson(itemJson, elemClass);
-                    if (converted == null) {
-                        converted = tryFromMap(itemJson, elemClass);
-                    }
-                    typedList.add(converted);
-                }
-            }
-            return typedList;
-        }
-        return deserialized;
-    }
-
-    private Object tryFromMap(String body, Class<?> targetClass) {
         try {
-            Object parsed = json.fromJson(body, Map.class);
-            if (parsed instanceof Map<?, ?> map) {
-                return invokeFromMap(map, targetClass);
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
-    }
-
-    private Object invokeFromMap(Map<?, ?> map, Class<?> targetClass) {
-        try {
-            Method m = targetClass.getMethod("fromMap", Map.class);
-            return m.invoke(null, map);
-        } catch (Exception ignored) {
-            return null;
+            return json.fromJson(body, genericType);
+        } catch (Exception e) {
+            return json.fromJson(body, returnType);
         }
     }
 }

@@ -107,8 +107,6 @@ public class FacesRendererServlet extends HttpServlet {
             renderProductos(req, res);
         } else if (uri.endsWith("/clientes.xhtml") || uri.endsWith("/clientes") || uri.endsWith("/customers.xhtml") || uri.endsWith("/customers")) {
             renderClientes(req, res);
-        } else if (uri.endsWith("/facturas.xhtml") || uri.endsWith("/facturas")) {
-            renderFacturas(req, res);
         } else if (uri.endsWith("/usuarios.xhtml") || uri.endsWith("/usuarios")) {
             renderUsuarios(req, res);
         } else {
@@ -187,30 +185,6 @@ public class FacesRendererServlet extends HttpServlet {
                 return;
             }
             res.sendRedirect("/clientes.xhtml");
-        } else if (uri.endsWith("/facturas.xhtml") || uri.endsWith("/facturas")) {
-            io.jettra.server.example.service.FacturaClientService fSvc = cdiContainer.getBean(io.jettra.server.example.service.FacturaClientService.class);
-            if (fSvc != null) {
-                String action = req.getParameter("action");
-                String id = req.getParameter("id");
-                if ("delete".equalsIgnoreCase(action) && id != null && !id.isBlank()) {
-                    fSvc.delete(id);
-                } else if ("anular".equalsIgnoreCase(action) && id != null && !id.isBlank()) {
-                    fSvc.anular(id);
-                } else if ("save".equalsIgnoreCase(action)) {
-                    int qty = 1;
-                    double price = 100.0;
-                    try { qty = Integer.parseInt(req.getParameter("cantidad")); } catch (Exception ignored) {}
-                    try { price = Double.parseDouble(req.getParameter("precio")); } catch (Exception ignored) {}
-                    var det = io.jettra.server.example.model.DetalleFacturaDto.of("SRV-JSF",
-                            req.getParameter("descripcion") != null ? req.getParameter("descripcion") : "Servicio", qty, price);
-                    var dto = new io.jettra.server.example.model.FacturaDto(id, req.getParameter("folio"),
-                            req.getParameter("clienteId"), req.getParameter("clienteNombre"),
-                            java.time.LocalDate.now().toString(), "EMITIDA", java.util.List.of(det), det.subtotal(), 0.0, 0.0);
-                    if (id != null && !id.isBlank()) fSvc.update(id, dto);
-                    else fSvc.create(dto);
-                }
-            }
-            res.sendRedirect("/facturas.xhtml");
         } else {
             res.sendRedirect("/dashboard.xhtml");
         }
@@ -796,65 +770,6 @@ public class FacesRendererServlet extends HttpServlet {
         out.println("      </script>");
     }
 
-    private void renderFacturas(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        HttpSession session = req.getSession(false);
-        User user = session != null ? (User) session.getAttribute("user") : new User("admin", "", "Administrador", "ADMIN", "");
-        io.jettra.server.example.service.FacturaClientService fSvc = cdiContainer.getBean(io.jettra.server.example.service.FacturaClientService.class);
-        if (fSvc == null) {
-            fSvc = new io.jettra.server.example.service.FacturaClientService();
-        }
-        List<io.jettra.server.example.model.FacturaDto> facturas = fSvc.listAll();
-        String backendUrl = fSvc.resolveBackendUrl();
-
-        res.setContentType("text/html; charset=UTF-8");
-        PrintWriter out = res.getWriter();
-        String activeStorage = getEffectiveStorageMode();
-
-        renderTemplate(out, "Facturación (example_factura_db) - Jakarta Faces", user, activeStorage, "facturas", () -> {
-            out.println("      <div style=\"display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.75rem;\">");
-            out.println("        <div>");
-            out.println("          <h1 style=\"font-size:1.5rem; font-weight:700; color:var(--text-main); margin:0;\">🧾 Facturación (example_factura_db) — Jakarta Faces + RestClient + JWT</h1>");
-            out.println("          <p style=\"color:var(--text-muted); margin:0.25rem 0 0;\">Consumiendo " + escapeHtml(backendUrl) + "/api/v1/facturas con Jettra JWT Bearer</p>");
-            out.println("        </div>");
-            out.println("        <div style=\"display:flex; gap:0.5rem;\">");
-            out.println("          <a href=\"/flux/facturas\" class=\"app-btn-secondary\" style=\"text-decoration:none;\">⚡ Ver en JettraFlux</a>");
-            out.println("          <a href=\"/aura/facturas\" class=\"app-btn-secondary\" style=\"text-decoration:none;\">✨ Ver en JettraAura</a>");
-            out.println("        </div>");
-            out.println("      </div>");
-            out.println("      <div class=\"ui-card\" style=\"margin-bottom:1.25rem;\">");
-            out.println("        <h3 style=\"margin:0 0 0.85rem;\">➕ Emitir Factura</h3>");
-            out.println("        <form method=\"post\" action=\"/facturas.xhtml\" class=\"responsive-form\" style=\"display:flex; flex-wrap:wrap; gap:0.75rem; align-items:flex-end;\">");
-            out.println("          <input type=\"hidden\" name=\"action\" value=\"save\"/>");
-            out.println("          <input type=\"text\" name=\"folio\" placeholder=\"FAC-2026-0002\" class=\"app-input\"/>");
-            out.println("          <input type=\"text\" name=\"clienteId\" value=\"CLI-001\" placeholder=\"ID Cliente\" class=\"app-input\" required/>");
-            out.println("          <input type=\"text\" name=\"clienteNombre\" placeholder=\"Nombre Cliente\" class=\"app-input\" required/>");
-            out.println("          <input type=\"text\" name=\"descripcion\" placeholder=\"Descripción Ítem\" class=\"app-input\" required/>");
-            out.println("          <input type=\"number\" name=\"cantidad\" value=\"1\" min=\"1\" class=\"app-input\" style=\"width:90px;\"/>");
-            out.println("          <input type=\"number\" name=\"precio\" value=\"150.00\" step=\"0.01\" class=\"app-input\" style=\"width:120px;\"/>");
-            out.println("          <button type=\"submit\" class=\"app-btn-primary\">💾 Emitir Factura</button>");
-            out.println("        </form>");
-            out.println("      </div>");
-            out.println("      <div class=\"ui-card\">");
-            out.println("        <h3 style=\"margin:0 0 0.85rem;\">📋 Facturas Registradas (" + facturas.size() + ")</h3>");
-            out.println("        <table class=\"app-table\" style=\"width:100%;\"><thead><tr><th>Folio</th><th>Cliente</th><th>Fecha</th><th>Estado</th><th>Total</th><th>Acciones</th></tr></thead><tbody>");
-            for (var f : facturas) {
-                out.println("          <tr>");
-                out.println("            <td><strong>" + escapeHtml(f.folio()) + "</strong></td>");
-                out.println("            <td>" + escapeHtml(f.clienteNombre()) + "</td>");
-                out.println("            <td>" + escapeHtml(f.fechaEmision()) + "</td>");
-                out.println("            <td>" + escapeHtml(f.estado()) + "</td>");
-                out.println("            <td>$" + String.format("%.2f", f.total()) + "</td>");
-                out.println("            <td>");
-                out.println("              <form method=\"post\" action=\"/facturas.xhtml\" style=\"display:inline;\"><input type=\"hidden\" name=\"action\" value=\"anular\"/><input type=\"hidden\" name=\"id\" value=\"" + escapeHtml(f.jettraId()) + "\"/><button type=\"submit\" class=\"app-btn-secondary\">Anular</button></form>");
-                out.println("              <form method=\"post\" action=\"/facturas.xhtml\" style=\"display:inline; margin-left:4px;\"><input type=\"hidden\" name=\"action\" value=\"delete\"/><input type=\"hidden\" name=\"id\" value=\"" + escapeHtml(f.jettraId()) + "\"/><button type=\"submit\" class=\"app-btn-danger\">🗑️ Eliminar</button></form>");
-                out.println("            </td>");
-                out.println("          </tr>");
-            }
-            out.println("        </tbody></table>");
-            out.println("      </div>");
-        });
-    }
-
     private void renderClientes(HttpServletRequest req, HttpServletResponse res) throws IOException {
         HttpSession session = req.getSession(false);
         User user = session != null ? (User) session.getAttribute("user") : new User("admin", "", "Administrador", "ADMIN", "");
@@ -1181,7 +1096,6 @@ public class FacesRendererServlet extends HttpServlet {
         out.println("        <a href=\"/dashboard.xhtml\" class=\"nav-link " + ("general".equals(activeSection) ? "active" : "") + "\">📊 Dashboard</a>");
         out.println("        <a href=\"/productos.xhtml\" class=\"nav-link " + ("productos".equals(activeSection) ? "active" : "") + "\">📦 Catálogo JPA</a>");
         out.println("        <a href=\"/clientes.xhtml\" class=\"nav-link " + ("clientes".equals(activeSection) ? "active" : "") + "\">👥 Clientes MP-Client (JWT)</a>");
-        out.println("        <a href=\"/facturas.xhtml\" class=\"nav-link " + ("facturas".equals(activeSection) ? "active" : "") + "\">🧾 Facturas Faces (JWT)</a>");
         out.println("        <a href=\"/usuarios.xhtml\" class=\"nav-link " + ("usuarios".equals(activeSection) ? "active" : "") + "\">👥 Usuarios Security</a>");
         out.println("      </nav>");
 
@@ -1189,8 +1103,6 @@ public class FacesRendererServlet extends HttpServlet {
         out.println("      <nav style=\"display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1.75rem;\">");
         out.println("        <a href=\"/flux/catalogo\" class=\"nav-link " + (("catalogo-flux".equals(activeSection) || "catalogo".equals(activeSection)) ? "active" : "") + "\">🛍️ Catálogo Reactivo (Flux)</a>");
         out.println("        <a href=\"/flux/customers\" class=\"nav-link " + ("flux-customers".equals(activeSection) ? "active" : "") + "\">👥 Clientes CRUD (Flux)</a>");
-        out.println("        <a href=\"/flux/facturas\" class=\"nav-link\">🧾 Facturas CRUD (Flux)</a>");
-        out.println("        <a href=\"/flux/clientes-ms\" class=\"nav-link\">👥 Clientes @RestRepository (Flux)</a>");
         out.println("        <a href=\"/dashboard.xhtml?view=metrics\" class=\"nav-link " + ("metrics".equals(activeSection) ? "active" : "") + "\">📊 Métricas del Servidor (Flux)</a>");
         out.println("        <a href=\"/dashboard.xhtml?view=health\" class=\"nav-link " + ("health".equals(activeSection) ? "active" : "") + "\">🩺 Estado de Salud (Flux)</a>");
         out.println("        <a href=\"/flux/storage-monitor\" class=\"nav-link " + ("storage-monitor".equals(activeSection) ? "active" : "") + "\">🚀 Monitor Almacenamiento</a>");
@@ -1203,8 +1115,6 @@ public class FacesRendererServlet extends HttpServlet {
         out.println("        <a href=\"/aura/demo\" class=\"nav-link\">✨ Portal JettraAura</a>");
         out.println("        <a href=\"/aura/catalogo\" class=\"nav-link\">📦 Catálogo Dinámico (ListView)</a>");
         out.println("        <a href=\"/aura/customers\" class=\"nav-link\">👥 Clientes CRUD (Modales)</a>");
-        out.println("        <a href=\"/aura/facturas\" class=\"nav-link\">🧾 Facturas CRUD (Aura)</a>");
-        out.println("        <a href=\"/aura/clientes-ms\" class=\"nav-link\">👥 Clientes @RestRepository (Aura)</a>");
         out.println("        <a href=\"/aura/formulario\" class=\"nav-link\">📝 Formulario Reactivo (CPM)</a>");
         out.println("        <a href=\"/aura/contador\" class=\"nav-link\">⚡ Contador AJAX Parcial</a>");
         out.println("      </nav>");
